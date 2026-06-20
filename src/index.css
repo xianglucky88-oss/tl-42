@@ -1,66 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import './styles/pixel.css';
+@import './styles/animations.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: 'Press Start 2P', monospace;
-  line-height: 1.5;
-  font-weight: 400;
-  color-scheme: dark;
-  color: #E8DCC4;
-  background-color: #5C4033;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: none;
-}
+@layer base {
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    place-items: center;
+    justify-content: center;
+  }
 
-* {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
+  #root {
+    width: 100%;
+    min-height: 100vh;
+  }
 }
 
 @layer utilities {
-  .pixel-border {
-    border: 4px solid #3A3A3A;
-    box-shadow: 4px 4px 0 0 #3A3A3A;
+  .content-auto {
+    content-visibility: auto;
   }
-
-  .pixel-border-thick {
-    border: 6px solid #3A3A3A;
-    box-shadow: 8px 8px 0 0 #3A3A3A;
+  
+  .pixel-perfect {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
   }
-
-  .pixel-border-wood {
-    border: 4px solid #5C4033;
-    box-shadow: 4px 4px 0 0 #3D2A22;
-  }
-
-  .crt-scanlines {
-    position: relative;
-  }
-
-  .crt-scanlines::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: repeating-linear-gradient(
-      0deg,
-      rgba(0, 0, 0, 0.15),
-      rgba(0, 0, 0, 0.15) 1px,
-      transparent 1px,
-      transparent 2px
-    );
-    pointer-events: none;
-    z-index: 10;
+  
+  .text-shadow-pixel {
+    text-shadow: 2px 2px 0 var(--pixel-border);
   }
 }

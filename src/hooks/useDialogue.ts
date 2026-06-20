@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { DialogueOption, DialogueResponse } from '../types/guest';
+import type { DialogueOption, DialogueResponse, Guest } from '../types/guest';
 
 export interface DialogueState {
   isActive: boolean;
@@ -7,36 +7,38 @@ export interface DialogueState {
   guestName?: string;
   guestAvatar?: string;
   currentText: string;
-  currentLine?: string;
   currentSpeaker: 'player' | 'guest';
   currentOptionId?: string;
-  availableOptions: DialogueOption[];
   options: DialogueOption[];
+  availableOptions: DialogueOption[];
   showOptions: boolean;
   response?: string;
   clueFound: boolean;
   isEnded: boolean;
   history: Array<{ text: string; speaker: 'player' | 'guest' }>;
   isTyping: boolean;
+  lastEffect?: {
+    reputation?: number;
+    clueId?: string;
+    unlocksStory?: string;
+    mood?: number;
+    money?: number;
+  };
 }
 
-export interface Dialogue {
-  id: string;
-  guestId: string;
-  guestName: string;
-  guestAvatar: string;
-  lines: string[];
-  options: DialogueOption[];
+export interface StartDialogueParams {
+  guest: Guest;
+  unlockedClueIds: string[];
+  reputation: number;
 }
 
 export function useDialogue() {
-  const [currentDialogue, setCurrentDialogue] = useState<Dialogue | null>(null);
   const [dialogueState, setDialogueState] = useState<DialogueState>({
     isActive: false,
     currentText: '',
-    currentSpeaker: 'player',
-    availableOptions: [],
+    currentSpeaker: 'guest',
     options: [],
+    availableOptions: [],
     showOptions: false,
     clueFound: false,
     isEnded: false,
@@ -44,52 +46,70 @@ export function useDialogue() {
     isTyping: false,
   });
 
-  const startDialogue = useCallback((dialogue: Dialogue) => {
-    setCurrentDialogue(dialogue);
-    setDialogueState({
-      isActive: true,
-      guestId: dialogue.guestId,
-      guestName: dialogue.guestName,
-      guestAvatar: dialogue.guestAvatar,
-      currentText: '',
-      currentLine: dialogue.lines[0],
-      currentSpeaker: 'guest',
-      availableOptions: dialogue.options,
-      options: dialogue.options,
-      showOptions: true,
-      clueFound: false,
-      isEnded: false,
-      history: [],
-      isTyping: false,
+  const filterOptions = useCallback((options: DialogueOption[], unlockedClueIds: string[], reputation: number) => {
+    return options.filter(opt => {
+      if (opt.requiredClueId && !unlockedClueIds.includes(opt.requiredClueId)) {
+        return false;
+      }
+      if (opt.requiredReputation && reputation < opt.requiredReputation) {
+        return false;
+      }
+      return true;
     });
   }, []);
 
-  const selectOption = useCallback((option: DialogueOption) => {
+  const startDialogue = useCallback((params: StartDialogueParams) => {
+    const { guest, unlockedClueIds, reputation } = params;
+    
+    const availableOptions = filterOptions(guest.dialogueOptions || [], unlockedClueIds, reputation);
+
+    setDialogueState({
+      isActive: true,
+      guestId: guest.id,
+      guestName: guest.name,
+      guestAvatar: guest.avatar,
+      currentText: `「你好，${guest.name}。欢迎来到百年酒店。」`,
+      currentSpeaker: 'player',
+      options: guest.dialogueOptions || [],
+      availableOptions,
+      showOptions: true,
+      clueFound: false,
+      isEnded: false,
+      history: [{ text: `你好，${guest.name}。欢迎来到百年酒店。`, speaker: 'player' }],
+      isTyping: false,
+    });
+  }, [filterOptions]);
+
+  const selectOption = useCallback((option: DialogueOption): DialogueResponse | undefined => {
+    const response = option.responses[0];
+    
     setDialogueState(prev => ({
       ...prev,
       currentText: option.text,
       currentSpeaker: 'player',
       currentOptionId: option.id,
-      history: [...prev.history, { text: option.text, speaker: 'player' as const }],
+      history: [...prev.history, { text: option.text, speaker: 'player' }],
       isTyping: true,
       showOptions: false,
+      lastEffect: response?.effect,
+      clueFound: !!response?.effect?.clueId,
     }));
 
     setTimeout(() => {
-      const response = option.responses[0];
       if (response) {
         setDialogueState(prev => ({
           ...prev,
           currentText: response.text,
           currentSpeaker: 'guest',
           response: response.text,
-          clueFound: !!response.effect?.clueId,
-          history: [...prev.history, { text: response.text, speaker: 'guest' as const }],
+          history: [...prev.history, { text: response.text, speaker: 'guest' }],
           isTyping: false,
-          isEnded: !response.nextOptionId,
+          isEnded: true,
         }));
       }
-    }, 1500);
+    }, 1000);
+
+    return response;
   }, []);
 
   const showResponse = useCallback((response: DialogueResponse, onComplete?: () => void) => {
@@ -99,24 +119,24 @@ export function useDialogue() {
       currentSpeaker: 'guest',
       response: response.text,
       clueFound: !!response.effect?.clueId,
-      history: [...prev.history, { text: response.text, speaker: 'guest' as const }],
+      history: [...prev.history, { text: response.text, speaker: 'guest' }],
       isTyping: true,
+      lastEffect: response.effect,
     }));
 
     setTimeout(() => {
       setDialogueState(prev => ({ ...prev, isTyping: false }));
       onComplete?.();
-    }, 2000);
+    }, 1500);
   }, []);
 
   const endDialogue = useCallback(() => {
-    setCurrentDialogue(null);
     setDialogueState({
       isActive: false,
       currentText: '',
       currentSpeaker: 'player',
-      availableOptions: [],
       options: [],
+      availableOptions: [],
       showOptions: false,
       clueFound: false,
       isEnded: false,
@@ -125,27 +145,19 @@ export function useDialogue() {
     });
   }, []);
 
-  const updateOptions = useCallback((options: DialogueOption[], unlockedClueIds: string[], reputation: number) => {
-    const available = options.filter(opt => {
-      if (opt.requiredClueId && !unlockedClueIds.includes(opt.requiredClueId)) {
-        return false;
-      }
-      if (opt.requiredReputation && reputation < opt.requiredReputation) {
-        return false;
-      }
-      return true;
+  const updateAvailableOptions = useCallback((unlockedClueIds: string[], reputation: number) => {
+    setDialogueState(prev => {
+      const available = filterOptions(prev.options, unlockedClueIds, reputation);
+      return { ...prev, availableOptions: available };
     });
-
-    setDialogueState(prev => ({ ...prev, availableOptions: available, options: available }));
-  }, []);
+  }, [filterOptions]);
 
   return {
-    currentDialogue,
     dialogueState,
     startDialogue,
     selectOption,
     showResponse,
     endDialogue,
-    updateOptions,
+    updateAvailableOptions,
   };
 }

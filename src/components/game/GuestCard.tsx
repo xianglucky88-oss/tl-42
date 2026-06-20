@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, MessageCircle, Eye, Star, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { User, MessageCircle, Eye, Star, Clock, AlertTriangle, CheckCircle, Package } from 'lucide-react';
 import { Guest } from '../../types/guest';
 import { PixelAvatar, PixelProgress, PixelButton, PixelBadge, PixelPanel, PixelWindow } from '../ui';
-import { useGuestStore } from '../../store/useGuestStore';
 import { useDialogue } from '../../hooks/useDialogue';
+import { useGameLoop } from '../../hooks/useGameLoop';
 import { useStoryStore } from '../../store/useStoryStore';
-import { useGameStore } from '../../store/useGameStore';
+import { useHotelStore } from '../../store/useHotelStore';
+import { useInventoryStore } from '../../store/useInventoryStore';
 import { getMoodColor } from '../../utils/pixel';
 
 interface GuestCardProps {
@@ -17,10 +18,11 @@ interface GuestCardProps {
 const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showDialogue, setShowDialogue] = useState(false);
-  const { meetNeed, addObservation } = useGuestStore();
-  const { startDialogue, currentDialogue, selectOption, dialogueState, endDialogue } = useDialogue();
-  const { discoverClue } = useStoryStore();
-  const { currentDay } = useGameStore();
+  const { dialogueState, startDialogue, selectOption, endDialogue } = useDialogue();
+  const { meetGuestNeed, applyDialogueEffect, addObservation: gameLoopAddObservation } = useGameLoop();
+  const { discoveredClues } = useStoryStore();
+  const { reputation } = useHotelStore();
+  const { items: inventoryItems } = useInventoryStore();
 
   const statusNames: Record<string, string> = {
     checking_in: '入住中',
@@ -37,9 +39,21 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
   };
 
   const handleTalk = () => {
-    if (guest.dialogues && guest.dialogues.length > 0) {
-      startDialogue(guest.dialogues[0]);
+    if (guest.dialogueOptions && guest.dialogueOptions.length > 0) {
+      const unlockedClueIds = discoveredClues.map(c => c.id);
+      startDialogue({
+        guest,
+        unlockedClueIds,
+        reputation,
+      });
       setShowDialogue(true);
+    }
+  };
+
+  const handleSelectOption = (option: any) => {
+    const response = selectOption(option);
+    if (response && response.effect) {
+      applyDialogueEffect(guest.id, response.effect);
     }
   };
 
@@ -48,10 +62,7 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
       const unobserved = guest.observations.filter(o => !o.discovered);
       if (unobserved.length > 0) {
         const observation = unobserved[0];
-        addObservation(guest.id, observation.id);
-        if (observation.clueId) {
-          discoverClue(observation.clueId, guest.name, currentDay);
-        }
+        gameLoopAddObservation(guest.id, observation.id);
       }
     }
   };
@@ -68,7 +79,27 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
   };
 
   const handleMeetNeed = (needId: string) => {
-    meetNeed(guest.id, needId);
+    meetGuestNeed(guest.id, needId);
+  };
+
+  const canMeetNeed = (need: any): boolean => {
+    if (!need.requiredItems || need.requiredItems.length === 0) return true;
+    
+    return need.requiredItems.every((itemId: string) => {
+      const item = inventoryItems.find(i => i.id === itemId);
+      return item && item.quantity > 0;
+    });
+  };
+
+  const getRequiredItemNames = (need: any): string => {
+    if (!need.requiredItems || need.requiredItems.length === 0) return '';
+    
+    return need.requiredItems
+      .map((itemId: string) => {
+        const item = inventoryItems.find(i => i.id === itemId);
+        return item?.name || itemId;
+      })
+      .join('、');
   };
 
   const unmetNeeds = guest.needs.filter(n => !n.met);
@@ -135,24 +166,47 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
             />
           </div>
 
+          <div className="mt-2">
+            <PixelProgress
+              value={guest.patience}
+              max={guest.maxPatience || 100}
+              label="耐心值"
+              variant="warning"
+              size="sm"
+            />
+          </div>
+
           {unmetNeeds.length > 0 && (
             <div className="mt-3">
               <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)] mb-2 flex items-center gap-1">
                 <AlertTriangle size={12} className="text-[var(--pixel-warning)]" />
                 未满足需求 ({unmetNeeds.length})
               </p>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {unmetNeeds.map(need => (
-                  <div key={need.id} className="flex items-center justify-between bg-[var(--pixel-bg-dark)] px-3 py-2 border-2 border-[var(--pixel-border)]">
-                    <span className="pixel-font-mono text-xs text-[var(--pixel-text-primary)]">
-                      {need.description}
-                    </span>
+                  <div key={need.id} className="bg-[var(--pixel-bg-dark)] px-3 py-2 border-2 border-[var(--pixel-border)]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="pixel-font-mono text-xs text-[var(--pixel-text-primary)]">
+                        {need.description}
+                      </span>
+                      <PixelBadge variant={need.urgency >= 3 ? 'danger' : need.urgency >= 2 ? 'warning' : 'info'} size="sm">
+                        紧急度 {need.urgency}
+                      </PixelBadge>
+                    </div>
+                    {need.requiredItems && need.requiredItems.length > 0 && (
+                      <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)] mb-2 flex items-center gap-1">
+                        <Package size={10} />
+                        需要: {getRequiredItemNames(need)}
+                      </p>
+                    )}
                     <PixelButton
-                      variant="success"
+                      variant={canMeetNeed(need) ? 'success' : 'default'}
                       size="sm"
                       onClick={() => handleMeetNeed(need.id)}
+                      disabled={!canMeetNeed(need)}
+                      className="w-full"
                     >
-                      满足
+                      {canMeetNeed(need) ? '满足需求' : '物资不足'}
                     </PixelButton>
                   </div>
                 ))}
@@ -181,7 +235,7 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
               variant="primary"
               size="sm"
               onClick={handleTalk}
-              disabled={!guest.dialogues || guest.dialogues.length === 0}
+              disabled={!guest.dialogueOptions || guest.dialogueOptions.length === 0}
               className="flex-1"
             >
               <span className="flex items-center justify-center gap-1">
@@ -264,22 +318,42 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
         title={`与 ${guest.name} 交谈`}
         width="500px"
       >
-        {currentDialogue && (
+        {dialogueState.isActive && (
           <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <PixelAvatar
+                name={guest.name}
+                role="guest"
+                mood={moodToNumber(guest.mood)}
+                size="md"
+              />
+              <div>
+                <p className="pixel-font-display text-sm text-[var(--pixel-text-primary)]">
+                  {guest.name}
+                </p>
+                <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)]">
+                  {guest.occupation}
+                </p>
+              </div>
+            </div>
+
             <div className="pixel-dialogue-box p-4">
               <p className="pixel-font-mono text-sm text-[var(--pixel-text-primary)]">
-                {dialogueState.currentLine || currentDialogue.lines[0]}
+                {dialogueState.currentText}
               </p>
             </div>
 
-            {dialogueState.showOptions && dialogueState.options.length > 0 && (
+            {dialogueState.showOptions && dialogueState.availableOptions.length > 0 && (
               <div className="space-y-2">
-                {dialogueState.options.map((option, index) => (
+                <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)]">
+                  选择回复:
+                </p>
+                {dialogueState.availableOptions.map((option, index) => (
                   <PixelButton
-                    key={index}
+                    key={option.id}
                     variant={index === 0 ? 'primary' : 'default'}
                     className="w-full text-left justify-start"
-                    onClick={() => selectOption(option)}
+                    onClick={() => handleSelectOption(option)}
                   >
                     {option.text}
                   </PixelButton>
@@ -287,35 +361,47 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
               </div>
             )}
 
-            {dialogueState.response && (
+            {dialogueState.isEnded && dialogueState.response && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="pixel-panel pixel-panel-light p-4"
+                className="pixel-panel pixel-panel-light p-4 space-y-3"
               >
                 <p className="pixel-font-mono text-sm text-[var(--pixel-text-primary)]">
                   {dialogueState.response}
                 </p>
-                {dialogueState.clueFound && (
-                  <PixelBadge variant="gold" className="mt-2" pulse>
-                    🎉 发现新线索！
-                  </PixelBadge>
+                {dialogueState.lastEffect && (
+                  <div className="space-y-1">
+                    {dialogueState.lastEffect.reputation && (
+                      <PixelBadge variant={dialogueState.lastEffect.reputation > 0 ? 'success' : 'danger'}>
+                        声望 {dialogueState.lastEffect.reputation > 0 ? '+' : ''}{dialogueState.lastEffect.reputation}
+                      </PixelBadge>
+                    )}
+                    {dialogueState.lastEffect.clueId && (
+                      <PixelBadge variant="gold" pulse>
+                        🎉 发现新线索！
+                      </PixelBadge>
+                    )}
+                    {dialogueState.lastEffect.unlocksStory && (
+                      <PixelBadge variant="info">
+                        📖 解锁新故事！
+                      </PixelBadge>
+                    )}
+                  </div>
                 )}
               </motion.div>
             )}
 
-            {!dialogueState.showOptions && !dialogueState.isEnded && (
+            {dialogueState.isEnded && (
               <PixelButton
                 variant="primary"
                 className="w-full"
                 onClick={() => {
-                  if (dialogueState.response) {
-                    endDialogue();
-                    setShowDialogue(false);
-                  }
+                  endDialogue();
+                  setShowDialogue(false);
                 }}
               >
-                {dialogueState.response ? '结束对话' : '继续'}
+                结束对话
               </PixelButton>
             )}
           </div>

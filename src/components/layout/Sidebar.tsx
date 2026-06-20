@@ -13,7 +13,7 @@ import {
   Play,
 } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
-import { useDailyCycle } from '../../hooks/useDailyCycle';
+import { useGameLoop } from '../../hooks/useGameLoop';
 import { PixelButton, PixelBadge } from '../ui';
 import { useGuestStore } from '../../store/useGuestStore';
 import { useStoryStore } from '../../store/useStoryStore';
@@ -27,10 +27,17 @@ const navItems = [
   { path: '/settings', label: '系统设置', icon: Settings },
 ];
 
+const phaseNames: Record<string, string> = {
+  morning: '早晨',
+  afternoon: '下午',
+  evening: '傍晚',
+};
+
 const Sidebar: React.FC = () => {
   const location = useLocation();
-  const { gamePhase } = useGameStore();
-  const { isPaused, nextPhase, togglePause } = useDailyCycle();
+  const { gamePhase, isPaused, currentDay, currentPhase } = useGameStore();
+  const { nextPhase } = useGameLoop();
+  const gameActions = useGameStore((state) => state.actions);
   const { guests } = useGuestStore();
   const { clues } = useStoryStore();
 
@@ -41,6 +48,11 @@ const Sidebar: React.FC = () => {
     <aside className="w-64 bg-[var(--pixel-bg-medium)] border-r-4 border-[var(--pixel-border)] flex flex-col">
       <div className="p-4 border-b-4 border-[var(--pixel-border)]">
         <div className="space-y-2">
+          <div className="pixel-panel pixel-panel-dark p-2 mb-2">
+            <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)] mb-1">
+              第 {currentDay} 天 · {phaseNames[currentPhase] || '早晨'}
+            </p>
+          </div>
           <div className="flex gap-2">
             <PixelButton
               variant="primary"
@@ -57,7 +69,7 @@ const Sidebar: React.FC = () => {
             <PixelButton
               variant={isPaused ? 'success' : 'warning'}
               size="sm"
-              onClick={togglePause}
+              onClick={gameActions.togglePause}
               disabled={gamePhase !== 'playing'}
             >
               {isPaused ? <Play size={14} /> : <Pause size={14} />}

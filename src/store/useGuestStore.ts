@@ -171,7 +171,7 @@ export const useGuestStore = create<GuestStore>((set, get) => {
             return {
               ...guest,
               needs: guest.needs.map((need) =>
-                need.id === needId ? { ...need, status } : need
+                need.id === needId ? { ...need, status, met: status === 'met' } : need
               ),
             };
           }),
@@ -180,7 +180,7 @@ export const useGuestStore = create<GuestStore>((set, get) => {
             return {
               ...guest,
               needs: guest.needs.map((need) =>
-                need.id === needId ? { ...need, status } : need
+                need.id === needId ? { ...need, status, met: status === 'met' } : need
               ),
             };
           }),

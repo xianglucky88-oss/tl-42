@@ -9,7 +9,7 @@ import {
 } from '../components';
 import { useGuestStore } from '../store/useGuestStore';
 import { useGameStore } from '../store/useGameStore';
-import { generateDailyGuests } from '../data/guests';
+import { useGameLoop } from '../hooks/useGameLoop';
 
 const statusNames: Record<string, string> = {
   all: '全部',
@@ -20,8 +20,9 @@ const statusNames: Record<string, string> = {
 };
 
 const GuestsPage: React.FC = () => {
-  const { guests, addGuest } = useGuestStore();
+  const { guests } = useGuestStore();
   const { currentDay } = useGameStore();
+  const { addRandomGuest } = useGameLoop();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   const statusFilters = ['all', 'checking_in', 'staying', 'checking_out', 'left'];
@@ -55,10 +56,7 @@ const GuestsPage: React.FC = () => {
               <PixelButton
                 variant="primary"
                 onClick={() => {
-                  const newGuests = generateDailyGuests(currentDay);
-                  if (newGuests.length > 0) {
-                    addGuest(newGuests[0]);
-                  }
+                  addRandomGuest();
                 }}
               >
                 <span className="flex items-center gap-2">

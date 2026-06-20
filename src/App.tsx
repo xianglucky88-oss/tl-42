@@ -16,17 +16,15 @@ import {
 } from './components';
 import { useGameStore } from './store/useGameStore';
 import { useSaveSystem } from './hooks/useSaveSystem';
-import { useDailyCycle } from './hooks/useDailyCycle';
 
 function App() {
   const { gamePhase } = useGameStore();
   const { initAutoSave } = useSaveSystem();
-  const { initDailyCycle } = useDailyCycle();
 
   useEffect(() => {
     initAutoSave();
-    initDailyCycle();
-  }, [initAutoSave, initDailyCycle]);
+    console.log('Game initialized');
+  }, [initAutoSave]);
 
   if (gamePhase === 'start') {
     return <StartScreen />;

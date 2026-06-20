@@ -189,8 +189,16 @@ export function useGameLoop() {
   }, []);
 
   const nextDay = useCallback(() => {
-    for (let i = 0; i < 3; i++) {
+    const gameState = useGameStore.getState();
+    if (gameState.currentPhase === 'evening') {
       nextPhase();
+    } else {
+      const phases: DayPhase[] = ['morning', 'afternoon', 'evening'];
+      const currentIndex = phases.indexOf(gameState.currentPhase as DayPhase);
+      const remainingSteps = phases.length - 1 - currentIndex;
+      for (let i = 0; i < remainingSteps + 1; i++) {
+        nextPhase();
+      }
     }
   }, [nextPhase]);
 
@@ -325,6 +333,28 @@ export function useGameLoop() {
     return newGuest;
   }, []);
 
+  const addObservation = useCallback((guestId: string, observationId: string) => {
+    const guestState = useGuestStore.getState();
+    const storyState = useStoryStore.getState();
+    const gameState = useGameStore.getState();
+
+    const guest = guestState.actions.getGuestById(guestId);
+    if (!guest) return;
+
+    const observation = guest.observations?.find((o: any) => o.id === observationId);
+    if (!observation || observation.discovered) return;
+
+    guestState.actions.discoverObservation(guestId, observationId);
+
+    if (observation.clueId) {
+      storyState.discoverClue(observation.clueId, 'observation', gameState.currentDay);
+      guestState.actions.unlockClueForGuest(guestId, observation.clueId);
+      console.log(`[GameLoop] 观察发现线索: ${observation.clueId}`);
+    }
+
+    console.log(`[GameLoop] 发现观察: ${observation.description}`);
+  }, []);
+
   return {
     currentDay,
     currentPhase,
@@ -333,5 +363,6 @@ export function useGameLoop() {
     meetGuestNeed,
     applyDialogueEffect,
     addRandomGuest,
+    addObservation,
   };
 }

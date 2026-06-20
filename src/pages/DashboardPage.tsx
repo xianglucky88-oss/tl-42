@@ -16,7 +16,7 @@ import { useEmployeeStore } from '../store/useEmployeeStore';
 import { useGuestStore } from '../store/useGuestStore';
 import { useStoryStore } from '../store/useStoryStore';
 import { useGameStore } from '../store/useGameStore';
-import { useDailyCycle } from '../hooks/useDailyCycle';
+import { useGameLoop } from '../hooks/useGameLoop';
 
 const DashboardPage: React.FC = () => {
   const { hotel, dailyStats } = useHotelStore();
@@ -24,7 +24,7 @@ const DashboardPage: React.FC = () => {
   const { guests } = useGuestStore();
   const { clues, storyProgress } = useStoryStore();
   const { currentDay, currentPhase } = useGameStore();
-  const { nextDay } = useDailyCycle();
+  const { nextDay, nextPhase } = useGameLoop();
 
   const recentClues = clues.filter(c => c.discovered).slice(0, 3);
   const currentGuests = guests.filter(g => g.status !== 'left');
@@ -78,11 +78,18 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </PixelPanel>
               )}
-              {currentPhase === 'evening' && (
+              {currentPhase === 'evening' ? (
                 <PixelButton variant="primary" size="lg" onClick={nextDay}>
                   <span className="flex items-center gap-2">
                     <Calendar size={18} />
                     进入下一天
+                  </span>
+                </PixelButton>
+              ) : (
+                <PixelButton variant="info" size="lg" onClick={nextPhase}>
+                  <span className="flex items-center gap-2">
+                    <TrendingUp size={18} />
+                    下一阶段
                   </span>
                 </PixelButton>
               )}

@@ -7,7 +7,7 @@ interface PixelProgressProps {
   max: number;
   label?: string;
   showValue?: boolean;
-  variant?: 'default' | 'mood' | 'stamina' | 'quality' | 'reputation';
+  variant?: 'default' | 'mood' | 'stamina' | 'quality' | 'reputation' | 'warning';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -32,6 +32,8 @@ const PixelProgress: React.FC<PixelProgressProps> = ({
       case 'quality':
         return getQualityColor(value);
       case 'reputation':
+        return '#C9A227';
+      case 'warning':
         return '#C9A227';
       default:
         return '#4A6741';

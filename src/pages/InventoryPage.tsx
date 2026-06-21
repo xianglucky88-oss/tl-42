@@ -27,6 +27,7 @@ const InventoryPage: React.FC = () => {
   const checkPendingDeliveries = useInventoryStore((state) => state.checkPendingDeliveries);
   const currentDay = useCurrentDay();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [deliveryResult, setDeliveryResult] = useState<string | null>(null);
 
   const categories = ['all', ...Object.keys(categoryNames)];
 
@@ -38,6 +39,31 @@ const InventoryPage: React.FC = () => {
   const deliveredOrders = orders.filter(o => o.status === 'delivered');
 
   const lowStockItems = items.filter(i => i.quantity <= i.minStock);
+
+  const handleCheckDelivery = () => {
+    const beforeCount = orders.filter(o => o.status === 'pending' && o.deliveryDate <= currentDay).length;
+    checkPendingDeliveries(currentDay);
+    const afterOrders = useInventoryStore.getState().orders;
+    const afterPending = afterOrders.filter(o => o.status === 'pending').length;
+    const justDelivered = beforeCount - afterPending;
+
+    if (justDelivered > 0) {
+      setDeliveryResult(`成功接收 ${justDelivered} 笔配送！`);
+    } else if (pendingOrders.length === 0) {
+      setDeliveryResult('当前没有待配送的订单');
+    } else {
+      const nextDelivery = pendingOrders
+        .filter(o => o.deliveryDate > currentDay)
+        .sort((a, b) => a.deliveryDate - b.deliveryDate)[0];
+      if (nextDelivery) {
+        setDeliveryResult(`暂无到货，最近一笔还需 ${nextDelivery.deliveryDate - currentDay} 天到达`);
+      } else {
+        setDeliveryResult('暂无可配送的订单');
+      }
+    }
+
+    setTimeout(() => setDeliveryResult(null), 3000);
+  };
 
   return (
     <div className="flex-1 p-6 overflow-y-auto">
@@ -67,7 +93,7 @@ const InventoryPage: React.FC = () => {
               )}
               <PixelButton
                 variant="primary"
-                onClick={() => checkPendingDeliveries(currentDay)}
+                onClick={handleCheckDelivery}
               >
                 <span className="flex items-center gap-2">
                   <Truck size={14} />
@@ -76,6 +102,18 @@ const InventoryPage: React.FC = () => {
               </PixelButton>
             </div>
           </div>
+
+          {deliveryResult && (
+            <motion.div
+              className="mt-3 pixel-card p-3 border-2 border-[var(--pixel-success)]"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <p className="pixel-font-mono text-sm text-[var(--pixel-success)] text-center">
+                {deliveryResult}
+              </p>
+            </motion.div>
+          )}
         </motion.div>
 
         <div className="grid grid-cols-4 gap-4 mb-6">
@@ -201,7 +239,7 @@ const InventoryPage: React.FC = () => {
                         ¥{order.totalCost.toLocaleString()}
                       </p>
                       <PixelBadge variant="warning" size="sm">
-                        {order.deliveryDay - 0 > 0 ? `${order.deliveryDay}天后到达` : '今日到达'}
+                        {order.deliveryDate <= currentDay ? '今日到达' : `${order.deliveryDate - currentDay}天后到达`}
                       </PixelBadge>
                     </div>
                   </div>

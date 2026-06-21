@@ -8,6 +8,11 @@ import {
   PixelWindow,
 } from '../components';
 import { useGameStore, useGameSettings, useGameActions } from '../store/useGameStore';
+import { useHotelStore } from '../store/useHotelStore';
+import { useEmployeeStore } from '../store/useEmployeeStore';
+import { useInventoryStore } from '../store/useInventoryStore';
+import { useGuestStore } from '../store/useGuestStore';
+import { useStoryStore } from '../store/useStoryStore';
 import { useSaveSystem } from '../hooks/useSaveSystem';
 import { hasSavedGame } from '../utils/storage';
 
@@ -17,14 +22,57 @@ const SettingsPage: React.FC = () => {
   const { saveGame, loadGame, deleteSave } = useSaveSystem(
     () => ({
       gameState: useGameStore.getState(),
-      hotelState: {},
-      employeeState: {},
-      inventoryState: {},
-      guestState: {},
-      storyState: {},
+      hotelState: useHotelStore.getState(),
+      employeeState: useEmployeeStore.getState(),
+      inventoryState: useInventoryStore.getState(),
+      guestState: useGuestStore.getState(),
+      storyState: useStoryStore.getState(),
     }),
     (data) => {
-      console.log('Save loaded:', data);
+      if (data.gameState) {
+        const gs = data.gameState as any;
+        useGameStore.setState({
+          currentDay: gs.currentDay,
+          currentPhase: gs.currentPhase,
+          gamePhase: gs.gamePhase,
+          isPaused: gs.isPaused,
+          settings: gs.settings,
+        });
+      }
+      if (data.hotelState && Object.keys(data.hotelState as object).length > 0) {
+        const hs = data.hotelState as any;
+        useHotelStore.setState({
+          money: hs.money,
+          reputation: hs.reputation,
+          rating: hs.rating,
+          rooms: hs.rooms,
+          facilities: hs.facilities,
+          hotel: hs.hotel,
+          dailyStats: hs.dailyStats,
+          dailyStatsHistory: hs.dailyStatsHistory,
+        });
+      }
+      if (data.employeeState && Object.keys(data.employeeState as object).length > 0) {
+        const es = data.employeeState as any;
+        useEmployeeStore.setState({ employees: es.employees });
+      }
+      if (data.inventoryState && Object.keys(data.inventoryState as object).length > 0) {
+        const is = data.inventoryState as any;
+        useInventoryStore.setState({ items: is.items, orders: is.orders, suppliers: is.suppliers });
+      }
+      if (data.guestState && Object.keys(data.guestState as object).length > 0) {
+        const gs = data.guestState as any;
+        useGuestStore.setState({ currentGuests: gs.currentGuests, guests: gs.guests });
+      }
+      if (data.storyState && Object.keys(data.storyState as object).length > 0) {
+        const ss = data.storyState as any;
+        useStoryStore.setState({
+          discoveredClues: ss.discoveredClues,
+          storyFragments: ss.storyFragments,
+          progress: ss.progress,
+        });
+      }
+      console.log('Save loaded and restored:', data);
     }
   );
   const [showClearConfirm, setShowClearConfirm] = useState(false);

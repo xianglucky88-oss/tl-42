@@ -1,6 +1,49 @@
 import type { Employee, AreaStatus } from '../types/employee';
 import type { Room } from '../types/game';
 import type { GuestNeed } from '../types/guest';
+import type { Difficulty } from '../types/game';
+
+export const DIFFICULTY_MULTIPLIERS: Record<Difficulty, {
+  incomeMultiplier: number;
+  expenseMultiplier: number;
+  satisfactionDecay: number;
+  patienceDecay: number;
+  reputationGainMultiplier: number;
+  reputationLossMultiplier: number;
+  tipChance: number;
+}> = {
+  easy: {
+    incomeMultiplier: 1.15,
+    expenseMultiplier: 0.85,
+    satisfactionDecay: 0.7,
+    patienceDecay: 0.7,
+    reputationGainMultiplier: 1.3,
+    reputationLossMultiplier: 0.6,
+    tipChance: 0.15,
+  },
+  normal: {
+    incomeMultiplier: 1.0,
+    expenseMultiplier: 1.0,
+    satisfactionDecay: 1.0,
+    patienceDecay: 1.0,
+    reputationGainMultiplier: 1.0,
+    reputationLossMultiplier: 1.0,
+    tipChance: 0.05,
+  },
+  hard: {
+    incomeMultiplier: 0.85,
+    expenseMultiplier: 1.2,
+    satisfactionDecay: 1.4,
+    patienceDecay: 1.5,
+    reputationGainMultiplier: 0.7,
+    reputationLossMultiplier: 1.5,
+    tipChance: 0.0,
+  },
+};
+
+export function getDifficultyConfig(difficulty: Difficulty) {
+  return DIFFICULTY_MULTIPLIERS[difficulty];
+}
 
 export function calculateServiceQuality(employees: Employee[], area: string): number {
   const areaEmployees = employees.filter(e => e.assignedArea === area);

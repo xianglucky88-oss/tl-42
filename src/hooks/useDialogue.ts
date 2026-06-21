@@ -1,5 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { DialogueOption, DialogueResponse, Guest } from '../types/guest';
+import { useGameStore } from '../store/useGameStore';
+import type { TextSpeed } from '../types/game';
+
+const TEXT_SPEED_MS: Record<TextSpeed, number> = {
+  slow: 2000,
+  normal: 1000,
+  fast: 400,
+};
 
 export interface DialogueState {
   isActive: boolean;
@@ -82,6 +90,8 @@ export function useDialogue() {
 
   const selectOption = useCallback((option: DialogueOption): DialogueResponse | undefined => {
     const response = option.responses[0];
+    const speed = useGameStore.getState().settings.textSpeed;
+    const delay = TEXT_SPEED_MS[speed];
     
     setDialogueState(prev => ({
       ...prev,
@@ -107,12 +117,15 @@ export function useDialogue() {
           isEnded: true,
         }));
       }
-    }, 1000);
+    }, delay);
 
     return response;
   }, []);
 
   const showResponse = useCallback((response: DialogueResponse, onComplete?: () => void) => {
+    const speed = useGameStore.getState().settings.textSpeed;
+    const delay = TEXT_SPEED_MS[speed] + 500;
+
     setDialogueState(prev => ({
       ...prev,
       currentText: response.text,
@@ -127,7 +140,7 @@ export function useDialogue() {
     setTimeout(() => {
       setDialogueState(prev => ({ ...prev, isTyping: false }));
       onComplete?.();
-    }, 1500);
+    }, delay);
   }, []);
 
   const endDialogue = useCallback(() => {

@@ -7,6 +7,7 @@ import { useGuestStore } from '../store/useGuestStore';
 import { useStoryStore } from '../store/useStoryStore';
 import type { DayPhase } from '../types/game';
 import type { GuestNeed } from '../types/guest';
+import { getDifficultyConfig } from '../utils/formula';
 
 export function useGameLoop() {
   const currentDay = useGameStore((state) => state.currentDay);
@@ -57,20 +58,25 @@ export function useGameLoop() {
       });
     }
 
+    const diffConfig = getDifficultyConfig(gameState.settings.difficulty);
+
     guests.forEach(guest => {
       let patienceChange = 0;
       let satisfactionChange = 0;
 
       guest.needs.forEach(need => {
         if (need.status === 'unmet') {
-          patienceChange -= need.urgency * 1;
-          satisfactionChange -= need.urgency * 1;
+          patienceChange -= need.urgency * diffConfig.patienceDecay;
+          satisfactionChange -= need.urgency * diffConfig.satisfactionDecay;
         } else if (need.status === 'met') {
           satisfactionChange += need.urgency * 1;
         } else if (need.status === 'exceeded') {
           satisfactionChange += need.urgency * 2;
         }
       });
+
+      patienceChange = Math.round(patienceChange);
+      satisfactionChange = Math.round(satisfactionChange);
 
       if (patienceChange !== 0) {
         guestState.actions.updateGuestPatience(guest.id, patienceChange);
@@ -117,6 +123,8 @@ export function useGameLoop() {
     } else {
       console.log(`[GameLoop] 第${gameState.currentDay}天结束，开始结算`);
 
+      const diffConfig = getDifficultyConfig(gameState.settings.difficulty);
+
       let dayIncome = 0;
       let dayExpense = 0;
       let reputationChange = 0;
@@ -129,7 +137,13 @@ export function useGameLoop() {
         if (guest.paid) {
           dayIncome += guest.totalBill;
         }
+        if (diffConfig.tipChance > 0 && guest.satisfaction >= 80 && Math.random() < diffConfig.tipChance) {
+          const tip = Math.floor(guest.totalBill * 0.1);
+          dayIncome += tip;
+        }
       });
+
+      dayIncome = Math.floor(dayIncome * diffConfig.incomeMultiplier);
 
       const salaries = employees.reduce((sum, e) => sum + (e.dailyWage || e.salary || 50), 0);
       dayExpense += salaries;
@@ -145,11 +159,19 @@ export function useGameLoop() {
       const maintenanceCost = 100;
       dayExpense += maintenanceCost;
 
+      dayExpense = Math.floor(dayExpense * diffConfig.expenseMultiplier);
+
       let avgSatisfaction = 50;
       if (guests.length > 0) {
         avgSatisfaction = guests.reduce((sum, g) => sum + g.satisfaction, 0) / guests.length;
       }
-      reputationChange = Math.round((avgSatisfaction - 50) / 10);
+
+      const baseReputationChange = Math.round((avgSatisfaction - 50) / 10);
+      if (baseReputationChange >= 0) {
+        reputationChange = Math.round(baseReputationChange * diffConfig.reputationGainMultiplier);
+      } else {
+        reputationChange = Math.round(baseReputationChange * diffConfig.reputationLossMultiplier);
+      }
 
       const profit = dayIncome - dayExpense;
 

@@ -63,6 +63,7 @@ const ScheduleBoard: React.FC = () => {
   const dayLabels = useMemo(() => {
     return Array.from({ length: SCHEDULE_DAYS }, (_, i) => {
       if (i === 0) return `今日 (第${currentDay}天)`;
+      if (i === 1) return `明日 (第${currentDay + 1}天)`;
       return `第${currentDay + i}天`;
     });
   }, [currentDay]);
@@ -240,7 +241,7 @@ const ScheduleBoard: React.FC = () => {
               <div
                 key={i}
                 className={`pixel-font-mono text-xs text-center py-1 ${
-                  i === 0
+                  i === 1
                     ? 'text-[var(--pixel-gold)] animate-pixelGlow'
                     : 'text-[var(--pixel-text-secondary)]'
                 }`}
@@ -374,7 +375,7 @@ const ScheduleBoard: React.FC = () => {
       <div className="pixel-panel-dark pixel-border-thin p-3 mb-3">
         <p className="pixel-font-mono text-xs text-[var(--pixel-gold)] flex items-center gap-2">
           <Sparkles size={12} />
-          <span>「今日」排班将在推进到下一天时自动应用，无需手动点击。合理排班可减少体力消耗并提升士气。</span>
+          <span>「今日」为当前生效排班，「明日」排班将在推进到下一天时自动应用。合理排班可减少体力消耗并提升士气。</span>
         </p>
       </div>
 

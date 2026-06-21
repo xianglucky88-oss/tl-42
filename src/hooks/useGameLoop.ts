@@ -198,12 +198,18 @@ export function useGameLoop() {
 
       console.log(`[GameLoop] 第${gameState.currentDay}天结算: 收入¥${dayIncome}, 支出¥${dayExpense}, 利润¥${profit}, 声望变化${reputationChange >= 0 ? '+' : ''}${reputationChange}`);
 
+      const scheduleState = useScheduleStore.getState();
+
+      scheduleState.schedules.forEach(schedule => {
+        const shiftedSlots = [...schedule.slots.slice(1), 'unassigned' as const];
+        scheduleState.setWeekSchedule(schedule.employeeId, shiftedSlots);
+      });
+
       const newDay = gameState.currentDay + 1;
       gameState.actions.nextDay();
 
       console.log(`[GameLoop] 第${newDay}天开始`);
 
-      const scheduleState = useScheduleStore.getState();
       const scheduleDayOffset = 0;
       const dayAssignments = scheduleState.getDayAssignments(scheduleDayOffset);
       const scheduleBonuses = scheduleState.calculateBonuses();
@@ -219,11 +225,6 @@ export function useGameLoop() {
       } else {
         employeeState.actions.restAllEmployees();
       }
-
-      scheduleState.schedules.forEach(schedule => {
-        const shiftedSlots = [...schedule.slots.slice(1), 'unassigned' as const];
-        scheduleState.setWeekSchedule(schedule.employeeId, shiftedSlots);
-      });
 
       const departingGuests = guestState.actions.getTodaysDepartures(gameState.currentDay);
       departingGuests.forEach(guest => {

@@ -11,19 +11,22 @@ import {
   PixelButton,
   PixelBadge,
 } from '../components';
-import { useHotelStore } from '../store/useHotelStore';
-import { useEmployeeStore } from '../store/useEmployeeStore';
-import { useGuestStore } from '../store/useGuestStore';
-import { useStoryStore } from '../store/useStoryStore';
-import { useGameStore } from '../store/useGameStore';
+import { useHotelStore, useHotelData, useHotelDailyStats } from '../store/useHotelStore';
+import { useEmployeeStore, useEmployees } from '../store/useEmployeeStore';
+import { useGuestStore, useCurrentGuests } from '../store/useGuestStore';
+import { useStoryStore, useClues, useStoryProgressState } from '../store/useStoryStore';
+import { useGameStore, useCurrentDay, useCurrentPhase } from '../store/useGameStore';
 import { useGameLoop } from '../hooks/useGameLoop';
 
 const DashboardPage: React.FC = () => {
-  const { hotel, dailyStats } = useHotelStore();
-  const { employees } = useEmployeeStore();
-  const { guests } = useGuestStore();
-  const { clues, storyProgress } = useStoryStore();
-  const { currentDay, currentPhase } = useGameStore();
+  const hotel = useHotelData();
+  const dailyStats = useHotelDailyStats();
+  const employees = useEmployees();
+  const guests = useCurrentGuests();
+  const clues = useClues();
+  const storyProgress = useStoryProgressState();
+  const currentDay = useCurrentDay();
+  const currentPhase = useCurrentPhase();
   const { nextDay, nextPhase } = useGameLoop();
 
   const recentClues = clues.filter(c => c.discovered).slice(0, 3);

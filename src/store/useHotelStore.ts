@@ -207,4 +207,6 @@ export const useHotelReputation = () => useHotelStore((state) => state.reputatio
 export const useHotelRating = () => useHotelStore((state) => state.rating);
 export const useHotelRooms = () => useHotelStore((state) => state.rooms);
 export const useHotelFacilities = () => useHotelStore((state) => state.facilities);
+export const useHotelData = () => useHotelStore((state) => state.hotel);
+export const useHotelDailyStats = () => useHotelStore((state) => state.dailyStats);
 export const useHotelActions = () => useHotelStore((state) => state.actions);

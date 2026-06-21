@@ -7,8 +7,8 @@ import {
   PixelButton,
   PixelBadge,
 } from '../components';
-import { useGuestStore } from '../store/useGuestStore';
-import { useGameStore } from '../store/useGameStore';
+import { useCurrentGuests } from '../store/useGuestStore';
+import { useCurrentDay } from '../store/useGameStore';
 import { useGameLoop } from '../hooks/useGameLoop';
 
 const statusNames: Record<string, string> = {
@@ -20,8 +20,8 @@ const statusNames: Record<string, string> = {
 };
 
 const GuestsPage: React.FC = () => {
-  const { guests } = useGuestStore();
-  const { currentDay } = useGameStore();
+  const guests = useCurrentGuests();
+  const currentDay = useCurrentDay();
   const { addRandomGuest } = useGameLoop();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 

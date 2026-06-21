@@ -7,7 +7,7 @@ import {
   PixelButton,
   PixelBadge,
 } from '../components';
-import { useStoryStore } from '../store/useStoryStore';
+import { useStoryStore, useClues, useStories, useStoryProgressState } from '../store/useStoryStore';
 
 const rarityNames: Record<string, string> = {
   all: '全部',
@@ -32,7 +32,10 @@ const categoryNames: Record<string, string> = {
 };
 
 const StoryPage: React.FC = () => {
-  const { clues, stories, storyProgress, discoverClue } = useStoryStore();
+  const clues = useClues();
+  const stories = useStories();
+  const storyProgress = useStoryProgressState();
+  const discoverClue = useStoryStore((state) => state.discoverClue);
   const [selectedRarity, setSelectedRarity] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showDiscoveredOnly, setShowDiscoveredOnly] = useState(true);

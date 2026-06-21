@@ -12,11 +12,11 @@ import {
   Pause,
   Play,
 } from 'lucide-react';
-import { useGameStore } from '../../store/useGameStore';
+import { useCurrentDay, useCurrentPhase, useGamePhase, useIsPaused, useGameActions } from '../../store/useGameStore';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { PixelButton, PixelBadge } from '../ui';
-import { useGuestStore } from '../../store/useGuestStore';
-import { useStoryStore } from '../../store/useStoryStore';
+import { useCurrentGuests } from '../../store/useGuestStore';
+import { useClues } from '../../store/useStoryStore';
 
 const navItems = [
   { path: '/', label: '酒店总览', icon: Home },
@@ -35,11 +35,14 @@ const phaseNames: Record<string, string> = {
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
-  const { gamePhase, isPaused, currentDay, currentPhase } = useGameStore();
+  const gamePhase = useGamePhase();
+  const isPaused = useIsPaused();
+  const currentDay = useCurrentDay();
+  const currentPhase = useCurrentPhase();
   const { nextPhase } = useGameLoop();
-  const gameActions = useGameStore((state) => state.actions);
-  const { guests } = useGuestStore();
-  const { clues } = useStoryStore();
+  const gameActions = useGameActions();
+  const guests = useCurrentGuests();
+  const clues = useClues();
 
   const pendingGuests = guests.filter(g => g.status === 'checking_in' || g.needs.some(n => !n.met)).length;
   const newClues = clues.filter(c => c.isNew).length;

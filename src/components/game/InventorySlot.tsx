@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Package, Plus, Minus, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { InventoryItem } from '../../types/inventory';
 import { PixelButton, PixelBadge, PixelProgress, PixelPanel, PixelWindow } from '../ui';
-import { useInventoryStore } from '../../store/useInventoryStore';
+import { useInventoryStore, useInventorySuppliers } from '../../store/useInventoryStore';
 import { getCategoryColor } from '../../utils/pixel';
 
 interface InventorySlotProps {
@@ -23,7 +23,9 @@ const categoryNames: Record<string, string> = {
 const InventorySlot: React.FC<InventorySlotProps> = ({ item, className = '' }) => {
   const [showOrder, setShowOrder] = useState(false);
   const [orderQuantity, setOrderQuantity] = useState(10);
-  const { updateItemQuantity, createOrder, suppliers } = useInventoryStore();
+  const updateItemQuantity = useInventoryStore((state) => state.updateItemQuantity);
+  const createOrder = useInventoryStore((state) => state.createOrder);
+  const suppliers = useInventorySuppliers();
 
   const categoryColor = getCategoryColor(item.category);
   const isLowStock = item.quantity <= item.minStock;

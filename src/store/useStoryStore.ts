@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useMemo } from 'react';
 import type { Clue, StoryFragment, HotelHistoryEvent, GuestSecret, StoryProgress } from '../types/story';
 import { ALL_CLUES, STORY_FRAGMENTS, HOTEL_HISTORY, GUEST_SECRETS, INITIAL_STORY_PROGRESS, INITIAL_CLUES } from '../data/stories';
 import { useGameStore } from './useGameStore';
@@ -259,5 +260,19 @@ export const useStoryFragments = () => useStoryStore((state) => state.storyFragm
 export const useHotelHistory = () => useStoryStore((state) => state.hotelHistory);
 export const useGuestSecrets = () => useStoryStore((state) => state.guestSecrets);
 export const useStoryProgressState = () => useStoryStore((state) => state.progress);
-export const useClues = () => useStoryStore((state) => state.clues);
-export const useStories = () => useStoryStore((state) => state.stories);
+
+export const useClues = () => {
+  const discoveredClues = useDiscoveredClues();
+  return useMemo(() => {
+    const allClues = ALL_CLUES.map(clue => {
+      const discovered = discoveredClues.find(dc => dc.id === clue.id);
+      return discovered || { ...clue, discovered: false };
+    });
+    return allClues;
+  }, [discoveredClues]);
+};
+
+export const useStories = () => {
+  const storyFragments = useStoryFragments();
+  return storyFragments;
+};

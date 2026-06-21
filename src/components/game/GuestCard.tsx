@@ -5,9 +5,9 @@ import { Guest } from '../../types/guest';
 import { PixelAvatar, PixelProgress, PixelButton, PixelBadge, PixelPanel, PixelWindow } from '../ui';
 import { useDialogue } from '../../hooks/useDialogue';
 import { useGameLoop } from '../../hooks/useGameLoop';
-import { useStoryStore } from '../../store/useStoryStore';
-import { useHotelStore } from '../../store/useHotelStore';
-import { useInventoryStore } from '../../store/useInventoryStore';
+import { useStoryStore, useDiscoveredClues } from '../../store/useStoryStore';
+import { useHotelStore, useHotelReputation } from '../../store/useHotelStore';
+import { useInventoryStore, useInventoryItems } from '../../store/useInventoryStore';
 import { getMoodColor } from '../../utils/pixel';
 
 interface GuestCardProps {
@@ -20,9 +20,9 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
   const [showDialogue, setShowDialogue] = useState(false);
   const { dialogueState, startDialogue, selectOption, endDialogue } = useDialogue();
   const { meetGuestNeed, applyDialogueEffect, addObservation: gameLoopAddObservation } = useGameLoop();
-  const { discoveredClues } = useStoryStore();
-  const { reputation } = useHotelStore();
-  const { items: inventoryItems } = useInventoryStore();
+  const discoveredClues = useDiscoveredClues();
+  const reputation = useHotelReputation();
+  const inventoryItems = useInventoryItems();
 
   const statusNames: Record<string, string> = {
     checking_in: '入住中',

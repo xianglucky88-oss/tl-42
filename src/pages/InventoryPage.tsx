@@ -7,8 +7,8 @@ import {
   PixelButton,
   PixelBadge,
 } from '../components';
-import { useInventoryStore } from '../store/useInventoryStore';
-import { useGameStore } from '../store/useGameStore';
+import { useInventoryStore, useInventoryItems, useInventoryOrders, useInventorySuppliers } from '../store/useInventoryStore';
+import { useCurrentDay } from '../store/useGameStore';
 import { getCategoryColor } from '../utils/pixel';
 
 const categoryNames: Record<string, string> = {
@@ -21,8 +21,11 @@ const categoryNames: Record<string, string> = {
 };
 
 const InventoryPage: React.FC = () => {
-  const { items, orders, suppliers, checkPendingDeliveries } = useInventoryStore();
-  const { currentDay } = useGameStore();
+  const items = useInventoryItems();
+  const orders = useInventoryOrders();
+  const suppliers = useInventorySuppliers();
+  const checkPendingDeliveries = useInventoryStore((state) => state.checkPendingDeliveries);
+  const currentDay = useCurrentDay();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const categories = ['all', ...Object.keys(categoryNames)];

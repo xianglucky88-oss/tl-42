@@ -7,12 +7,13 @@ import {
   PixelBadge,
   PixelWindow,
 } from '../components';
-import { useGameStore } from '../store/useGameStore';
+import { useGameStore, useGameSettings, useGameActions } from '../store/useGameStore';
 import { useSaveSystem } from '../hooks/useSaveSystem';
 import { hasSavedGame } from '../utils/storage';
 
 const SettingsPage: React.FC = () => {
-  const { actions, settings } = useGameStore();
+  const settings = useGameSettings();
+  const actions = useGameActions();
   const { saveGame, loadGame, deleteSave } = useSaveSystem(
     () => ({
       gameState: useGameStore.getState(),

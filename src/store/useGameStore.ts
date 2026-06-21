@@ -101,5 +101,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 export const useCurrentDay = () => useGameStore((state) => state.currentDay);
 export const useCurrentPhase = () => useGameStore((state) => state.currentPhase);
 export const useGamePhase = () => useGameStore((state) => state.gamePhase);
+export const useIsPaused = () => useGameStore((state) => state.isPaused);
 export const useGameSettings = () => useGameStore((state) => state.settings);
 export const useGameActions = () => useGameStore((state) => state.actions);

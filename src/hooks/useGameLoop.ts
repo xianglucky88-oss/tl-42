@@ -5,6 +5,7 @@ import { useEmployeeStore } from '../store/useEmployeeStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useGuestStore } from '../store/useGuestStore';
 import { useStoryStore } from '../store/useStoryStore';
+import { useScheduleStore } from '../store/useScheduleStore';
 import type { DayPhase } from '../types/game';
 import type { GuestNeed } from '../types/guest';
 import { getDifficultyConfig } from '../utils/formula';
@@ -20,6 +21,11 @@ export function useGameLoop() {
     const inventoryState = useInventoryStore.getState();
     const hotelState = useHotelStore.getState();
     const storyState = useStoryStore.getState();
+    const scheduleState = useScheduleStore.getState();
+
+    if (scheduleState.schedules.length === 0) {
+      scheduleState.initSchedules(employeeState.employees.map(e => e.id));
+    }
 
     const phases: DayPhase[] = ['morning', 'afternoon', 'evening'];
     const currentIndex = phases.indexOf(gameState.currentPhase);
@@ -197,6 +203,28 @@ export function useGameLoop() {
 
       console.log(`[GameLoop] 第${newDay}天开始`);
 
+      const scheduleState = useScheduleStore.getState();
+      const scheduleDayOffset = 0;
+      const dayAssignments = scheduleState.getDayAssignments(scheduleDayOffset);
+      const scheduleBonuses = scheduleState.calculateBonuses();
+
+      const hasAnySchedule = dayAssignments.some(a => a.assignment !== 'unassigned');
+
+      if (hasAnySchedule) {
+        console.log(`[GameLoop] 自动应用第${newDay}天排班，共${dayAssignments.length}名员工`);
+        for (const { employeeId, assignment } of dayAssignments) {
+          employeeState.applyDaySchedule(employeeId, assignment);
+        }
+        employeeState.applyScheduleBonuses(scheduleBonuses);
+      } else {
+        employeeState.actions.restAllEmployees();
+      }
+
+      scheduleState.schedules.forEach(schedule => {
+        const shiftedSlots = [...schedule.slots.slice(1), 'unassigned' as const];
+        scheduleState.setWeekSchedule(schedule.employeeId, shiftedSlots);
+      });
+
       const departingGuests = guestState.actions.getTodaysDepartures(gameState.currentDay);
       departingGuests.forEach(guest => {
         if (!guest.isCheckOut) {
@@ -205,7 +233,6 @@ export function useGameLoop() {
       });
 
       inventoryState.actions.checkPendingDeliveries(newDay);
-      employeeState.actions.restAllEmployees();
       storyState.checkForUnlocks();
     }
   }, []);

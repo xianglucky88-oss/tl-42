@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDays, AlertTriangle, Sparkles, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, AlertTriangle, Sparkles, RotateCcw } from 'lucide-react';
 import { PixelPanel, PixelButton, PixelBadge, PixelAvatar } from '../ui';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { useEmployeeStore } from '../../store/useEmployeeStore';
@@ -9,8 +9,6 @@ import type { ScheduleAssignment, ScheduleConflict, ScheduleBonus } from '../../
 import type { AreaType } from '../../types/game';
 
 const SCHEDULE_DAYS = 7;
-
-const DAY_LABELS = ['第1天', '第2天', '第3天', '第4天', '第5天', '第6天', '第7天'];
 
 const ASSIGNMENT_OPTIONS: { value: ScheduleAssignment; label: string; color: string }[] = [
   { value: 'rest', label: '休息', color: '#6B8E6B' },
@@ -62,9 +60,12 @@ const ScheduleBoard: React.FC = () => {
   const [showBonuses, setShowBonuses] = useState(false);
   const [applyDay, setApplyDay] = useState<number | null>(null);
 
-  useEffect(() => {
-    initSchedules(employees.map(e => e.id));
-  }, [employees, initSchedules]);
+  const dayLabels = useMemo(() => {
+    return Array.from({ length: SCHEDULE_DAYS }, (_, i) => {
+      if (i === 0) return `今日 (第${currentDay}天)`;
+      return `第${currentDay + i}天`;
+    });
+  }, [currentDay]);
 
   const conflicts = useMemo(() => detectConflicts(), [schedules, detectConflicts]);
   const bonuses = useMemo(() => calculateBonuses(), [schedules, calculateBonuses]);
@@ -192,7 +193,7 @@ const ScheduleBoard: React.FC = () => {
                   <div key={`${c.employeeId}-${c.dayOffset}-${i}`} className="flex items-center gap-2">
                     <AlertTriangle size={12} className="text-[var(--pixel-danger)] flex-shrink-0" />
                     <span className="pixel-font-mono text-xs text-[var(--pixel-danger)]">
-                      {getEmployeeName(c.employeeId)} · {DAY_LABELS[c.dayOffset]}: {c.message}
+                      {getEmployeeName(c.employeeId)} · {dayLabels[c.dayOffset]}: {c.message}
                     </span>
                   </div>
                 ))}
@@ -235,10 +236,14 @@ const ScheduleBoard: React.FC = () => {
             <div className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)] flex items-center px-2">
               员工
             </div>
-            {DAY_LABELS.map((label, i) => (
+            {dayLabels.map((label, i) => (
               <div
                 key={i}
-                className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)] text-center py-1"
+                className={`pixel-font-mono text-xs text-center py-1 ${
+                  i === 0
+                    ? 'text-[var(--pixel-gold)] animate-pixelGlow'
+                    : 'text-[var(--pixel-text-secondary)]'
+                }`}
               >
                 {label}
               </div>
@@ -366,11 +371,18 @@ const ScheduleBoard: React.FC = () => {
         ))}
       </div>
 
+      <div className="pixel-panel-dark pixel-border-thin p-3 mb-3">
+        <p className="pixel-font-mono text-xs text-[var(--pixel-gold)] flex items-center gap-2">
+          <Sparkles size={12} />
+          <span>「今日」排班将在推进到下一天时自动应用，无需手动点击。合理排班可减少体力消耗并提升士气。</span>
+        </p>
+      </div>
+
       <div className="flex items-center gap-3 pt-2 border-t-2 border-[var(--pixel-border)]">
         <span className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)]">
-          应用排班:
+          手动应用:
         </span>
-        {DAY_LABELS.map((label, i) => (
+        {dayLabels.map((label, i) => (
           <PixelButton
             key={i}
             variant={applyDay === i ? 'danger' : 'default'}

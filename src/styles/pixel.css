@@ -621,3 +621,45 @@ h1, h2, h3, h4, h5, h6 {
 .flex-2 {
   flex: 2;
 }
+
+.schedule-cell {
+  position: relative;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.schedule-cell:hover {
+  filter: brightness(1.2);
+}
+
+.schedule-cell-conflict {
+  animation: scheduleConflictPulse 1.2s ease-in-out infinite;
+  border-color: var(--pixel-danger) !important;
+  box-shadow: 0 0 8px rgba(139, 38, 53, 0.6), inset 0 0 4px rgba(139, 38, 53, 0.3);
+}
+
+.schedule-conflict-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
+@keyframes scheduleConflictPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(139, 38, 53, 0.6), inset 0 0 4px rgba(139, 38, 53, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(139, 38, 53, 0.9), inset 0 0 8px rgba(139, 38, 53, 0.5);
+  }
+}
+
+.schedule-grid-container {
+  border: 3px solid var(--pixel-border);
+  background-color: var(--pixel-bg-dark);
+  padding: 12px;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.3);
+}

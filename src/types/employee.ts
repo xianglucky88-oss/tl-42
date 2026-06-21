@@ -52,3 +52,30 @@ export interface AreaStatus {
   efficiency: number;
   problems: string[];
 }
+
+export type ScheduleAssignment = AreaType | 'rest';
+
+export interface ScheduleSlot {
+  employeeId: string;
+  dayOffset: number;
+  assignment: ScheduleAssignment;
+}
+
+export interface WeeklySchedule {
+  employeeId: string;
+  slots: ScheduleAssignment[];
+}
+
+export interface ScheduleConflict {
+  employeeId: string;
+  dayOffset: number;
+  type: 'consecutive_overwork' | 'no_rest' | 'area_overstaffed';
+  message: string;
+}
+
+export interface ScheduleBonus {
+  employeeId: string;
+  staminaSaved: number;
+  moraleBoost: number;
+  reason: string;
+}

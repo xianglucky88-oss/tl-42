@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, MapPin, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, MapPin, RefreshCw, CalendarDays } from 'lucide-react';
 import {
   EmployeeCard,
   PixelPanel,
   PixelButton,
   PixelBadge,
   PixelWindow,
+  ScheduleBoard,
 } from '../components';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import { AreaType } from '../types/game';
@@ -22,10 +23,13 @@ const areaNames: Record<AreaType, string> = {
   unassigned: '未分配',
 };
 
+type TabType = 'assign' | 'schedule';
+
 const ManagementPage: React.FC = () => {
   const { employees, assignEmployee, restAllEmployees } = useEmployeeStore();
   const [selectedArea, setSelectedArea] = useState<AreaType | 'all'>('all');
   const [showRestConfirm, setShowRestConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('schedule');
 
   const filteredEmployees = selectedArea === 'all'
     ? employees
@@ -74,65 +78,109 @@ const ManagementPage: React.FC = () => {
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-6 gap-3 mb-6"
-          initial={{ opacity: 0, y: 20 }}
+          className="flex gap-2 mb-6"
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.05 }}
         >
           <PixelButton
-            variant={selectedArea === 'all' ? 'primary' : 'default'}
-            onClick={() => setSelectedArea('all')}
-            className="justify-center"
+            variant={activeTab === 'schedule' ? 'primary' : 'default'}
+            onClick={() => setActiveTab('schedule')}
           >
             <span className="flex items-center gap-2">
-              <Users size={14} />
-              全部 ({employees.length})
+              <CalendarDays size={14} />
+              排班管理
             </span>
           </PixelButton>
-          {areaStats.map(stat => (
-            <PixelButton
-              key={stat.area}
-              variant={selectedArea === stat.area ? 'success' : 'default'}
-              onClick={() => setSelectedArea(stat.area)}
-              className="justify-center"
-            >
-              <span className="flex items-center gap-2">
-                <MapPin size={14} />
-                {stat.name} ({stat.count})
-              </span>
-            </PixelButton>
-          ))}
+          <PixelButton
+            variant={activeTab === 'assign' ? 'primary' : 'default'}
+            onClick={() => setActiveTab('assign')}
+          >
+            <span className="flex items-center gap-2">
+              <MapPin size={14} />
+              区域分配
+            </span>
+          </PixelButton>
         </motion.div>
 
-        <motion.div
-          className="grid grid-cols-1 lg:grid-cols-2 gap-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {filteredEmployees.map((employee, index) => (
-            <motion.div
-              key={employee.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-            >
-              <EmployeeCard employee={employee} />
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {filteredEmployees.length === 0 && (
+        {activeTab === 'schedule' && (
           <motion.div
-            className="text-center py-12"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
           >
-            <Users size={48} className="text-[var(--pixel-text-secondary)] mx-auto mb-4" />
-            <p className="pixel-font-mono text-sm text-[var(--pixel-text-secondary)]">
-              该区域暂无员工
-            </p>
+            <PixelPanel animate={false}>
+              <div className="p-4">
+                <ScheduleBoard />
+              </div>
+            </PixelPanel>
           </motion.div>
+        )}
+
+        {activeTab === 'assign' && (
+          <>
+            <motion.div
+              className="grid grid-cols-6 gap-3 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <PixelButton
+                variant={selectedArea === 'all' ? 'primary' : 'default'}
+                onClick={() => setSelectedArea('all')}
+                className="justify-center"
+              >
+                <span className="flex items-center gap-2">
+                  <Users size={14} />
+                  全部 ({employees.length})
+                </span>
+              </PixelButton>
+              {areaStats.map(stat => (
+                <PixelButton
+                  key={stat.area}
+                  variant={selectedArea === stat.area ? 'success' : 'default'}
+                  onClick={() => setSelectedArea(stat.area)}
+                  className="justify-center"
+                >
+                  <span className="flex items-center gap-2">
+                    <MapPin size={14} />
+                    {stat.name} ({stat.count})
+                  </span>
+                </PixelButton>
+              ))}
+            </motion.div>
+
+            <motion.div
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              {filteredEmployees.map((employee, index) => (
+                <motion.div
+                  key={employee.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                >
+                  <EmployeeCard employee={employee} />
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {filteredEmployees.length === 0 && (
+              <motion.div
+                className="text-center py-12"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <Users size={48} className="text-[var(--pixel-text-secondary)] mx-auto mb-4" />
+                <p className="pixel-font-mono text-sm text-[var(--pixel-text-secondary)]">
+                  该区域暂无员工
+                </p>
+              </motion.div>
+            )}
+          </>
         )}
       </div>
 

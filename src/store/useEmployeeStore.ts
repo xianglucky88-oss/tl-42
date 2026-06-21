@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import type { Employee, EmployeeMood, EmployeeStatus } from '../types/employee';
 import type { AreaType } from '../types/game';
+import type { ScheduleAssignment } from '../types/employee';
 import { INITIAL_EMPLOYEES } from '../data/employees';
 import { calculateServiceQuality } from '../utils/formula';
 
@@ -9,6 +10,8 @@ interface EmployeeStore {
   employees: Employee[];
   assignEmployee: (employeeId: string, area: AreaType) => void;
   restAllEmployees: () => void;
+  applyDaySchedule: (employeeId: string, assignment: ScheduleAssignment) => void;
+  applyScheduleBonuses: (bonuses: { employeeId: string; staminaSaved: number; moraleBoost: number }[]) => void;
   actions: {
     assignEmployee: (employeeId: string, area: AreaType) => void;
     updateEmployee: (employeeId: string, updates: Partial<Employee>) => void;
@@ -43,10 +46,68 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => {
     }));
   };
 
+  const applyDaySchedule = (employeeId: string, assignment: ScheduleAssignment) => {
+    set((state) => ({
+      employees: state.employees.map((emp) => {
+        if (emp.id !== employeeId) return emp;
+
+        if (assignment === 'rest') {
+          const staminaRecovery = 25;
+          return {
+            ...emp,
+            assignedArea: 'unassigned' as AreaType,
+            status: 'resting' as EmployeeStatus,
+            stamina: Math.min(emp.maxStamina, emp.stamina + staminaRecovery),
+            morale: Math.min(100, emp.morale + 3),
+          };
+        }
+
+        const drain = assignment === 'maintenance' ? 20
+                    : assignment === 'rooms' ? 15
+                    : 10;
+
+        let mood: EmployeeMood = emp.mood;
+        if (emp.stamina - drain < 30) {
+          mood = 20 as EmployeeMood;
+        } else if (emp.morale < 40) {
+          mood = 30 as EmployeeMood;
+        } else if (emp.morale > 70 && emp.stamina > 50) {
+          mood = 80 as EmployeeMood;
+        }
+
+        return {
+          ...emp,
+          assignedArea: assignment as AreaType,
+          status: 'working' as EmployeeStatus,
+          stamina: Math.max(0, emp.stamina - drain),
+          mood,
+          daysWorked: emp.daysWorked + 1,
+        };
+      }),
+    }));
+  };
+
+  const applyScheduleBonuses = (bonuses: { employeeId: string; staminaSaved: number; moraleBoost: number }[]) => {
+    const bonusMap = new Map(bonuses.map(b => [b.employeeId, b]));
+    set((state) => ({
+      employees: state.employees.map((emp) => {
+        const bonus = bonusMap.get(emp.id);
+        if (!bonus) return emp;
+        return {
+          ...emp,
+          stamina: Math.max(0, Math.min(emp.maxStamina, emp.stamina + bonus.staminaSaved)),
+          morale: Math.max(0, Math.min(100, emp.morale + bonus.moraleBoost)),
+        };
+      }),
+    }));
+  };
+
   return {
     employees: [...INITIAL_EMPLOYEES],
     assignEmployee,
     restAllEmployees,
+    applyDaySchedule,
+    applyScheduleBonuses,
 
     actions: {
       assignEmployee,

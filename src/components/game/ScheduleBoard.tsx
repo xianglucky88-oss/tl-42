@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarDays, AlertTriangle, Sparkles, RotateCcw } from 'lucide-react';
 import { PixelPanel, PixelButton, PixelBadge, PixelAvatar } from '../ui';
@@ -55,6 +55,12 @@ const ScheduleBoard: React.FC = () => {
   } = useScheduleStore();
 
   const currentDay = useGameStore((s) => s.currentDay);
+
+  useEffect(() => {
+    if (schedules.length === 0 && employees.length > 0) {
+      initSchedules(employees.map(e => e.id));
+    }
+  }, [schedules.length, employees, initSchedules]);
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
   const [showConflicts, setShowConflicts] = useState(false);
   const [showBonuses, setShowBonuses] = useState(false);

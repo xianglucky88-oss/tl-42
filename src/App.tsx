@@ -15,26 +15,11 @@ import {
   Sidebar,
 } from './components';
 import { useGameStore } from './store/useGameStore';
-import { useHotelStore } from './store/useHotelStore';
-import { useEmployeeStore } from './store/useEmployeeStore';
-import { useInventoryStore } from './store/useInventoryStore';
-import { useGuestStore } from './store/useGuestStore';
-import { useStoryStore } from './store/useStoryStore';
 import { useSaveSystem } from './hooks/useSaveSystem';
 
 function App() {
   const gamePhase = useGameStore((state) => state.gamePhase);
-  const { initAutoSave } = useSaveSystem(
-    () => ({
-      gameState: useGameStore.getState(),
-      hotelState: useHotelStore.getState(),
-      employeeState: useEmployeeStore.getState(),
-      inventoryState: useInventoryStore.getState(),
-      guestState: useGuestStore.getState(),
-      storyState: useStoryStore.getState(),
-    }),
-    () => {}
-  );
+  const { initAutoSave } = useSaveSystem();
 
   useEffect(() => {
     initAutoSave();

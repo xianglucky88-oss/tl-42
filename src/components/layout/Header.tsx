@@ -1,10 +1,10 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Hotel, Coins, Star, Sun, CloudSun, Moon, Calendar, Save } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Hotel, Coins, Star, Sun, CloudSun, Moon, Calendar, Save, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useHotelStore } from '../../store/useHotelStore';
 import { useGameStore } from '../../store/useGameStore';
 import { PixelBadge, PixelButton } from '../ui';
-import { useSaveSystem } from '../../hooks/useSaveSystem';
+import { useSaveSystem, SaveStatus } from '../../hooks/useSaveSystem';
 
 const phaseIcons = {
   morning: Sun,
@@ -18,14 +18,28 @@ const phaseNames = {
   evening: '傍晚',
 };
 
+type PixelButtonVariant = 'default' | 'primary' | 'success' | 'danger' | 'warning' | 'info';
+
+const saveStatusConfig: Record<SaveStatus, { label: string; icon: typeof Save; variant: PixelButtonVariant; className: string }> = {
+  idle: { label: '保存', icon: Save, variant: 'primary', className: 'text-[var(--pixel-text-primary)]' },
+  saving: { label: '保存中...', icon: Loader2, variant: 'primary', className: 'text-[var(--pixel-info)] animate-spin' },
+  saved: { label: '已保存', icon: Check, variant: 'success', className: 'text-[var(--pixel-success)]' },
+  loading: { label: '读取中...', icon: Loader2, variant: 'info', className: 'text-[var(--pixel-info)] animate-spin' },
+  loaded: { label: '已读取', icon: Check, variant: 'success', className: 'text-[var(--pixel-success)]' },
+  error: { label: '失败', icon: AlertCircle, variant: 'danger', className: 'text-[var(--pixel-danger)]' },
+};
+
 const Header: React.FC = () => {
   const { hotel } = useHotelStore();
   const { currentDay, currentPhase } = useGameStore();
-  const { saveGame } = useSaveSystem();
+  const { saveGame, saveStatus, saveError } = useSaveSystem();
 
   const PhaseIcon = phaseIcons[currentPhase] || Sun;
+  const statusCfg = saveStatusConfig[saveStatus];
+  const StatusIcon = statusCfg.icon;
 
   const handleSave = () => {
+    if (saveStatus === 'saving' || saveStatus === 'loading') return;
     saveGame();
   };
 
@@ -87,12 +101,31 @@ const Header: React.FC = () => {
             </span>
           </div>
 
-          <PixelButton variant="primary" size="sm" onClick={handleSave}>
-            <span className="flex items-center gap-1">
-              <Save size={12} />
-              保存
-            </span>
-          </PixelButton>
+          <div className="flex items-center gap-2">
+            <PixelButton
+              variant={statusCfg.variant}
+              size="sm"
+              onClick={handleSave}
+              disabled={saveStatus === 'saving' || saveStatus === 'loading'}
+            >
+              <span className="flex items-center gap-1">
+                <StatusIcon size={12} className={statusCfg.className} />
+                {statusCfg.label}
+              </span>
+            </PixelButton>
+            <AnimatePresence>
+              {saveError && (
+                <motion.span
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  className="pixel-font-mono text-xs text-[var(--pixel-danger)]"
+                >
+                  {saveError}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </header>

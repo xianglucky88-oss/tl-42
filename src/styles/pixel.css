@@ -487,6 +487,21 @@ h1, h2, h3, h4, h5, h6 {
   background-color: var(--pixel-bg-light);
 }
 
+.pixel-panel-danger {
+  background-color: rgba(139, 38, 53, 0.2);
+  border-color: var(--pixel-danger);
+}
+
+.pixel-panel-success {
+  background-color: rgba(45, 90, 39, 0.2);
+  border-color: var(--pixel-success);
+}
+
+.pixel-panel-info {
+  background-color: rgba(46, 134, 171, 0.2);
+  border-color: var(--pixel-info);
+}
+
 .pixel-progress-fill {
   height: 100%;
   transition: width 0.3s ease;

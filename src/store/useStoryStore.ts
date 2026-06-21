@@ -40,7 +40,6 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
 
   get clues() {
     const { discoveredClues } = get();
-    const discoveredIds = new Set(discoveredClues.map(c => c.id));
     const allClues = ALL_CLUES.map(clue => {
       const discovered = discoveredClues.find(dc => dc.id === clue.id);
       return discovered || { ...clue, discovered: false };
@@ -57,7 +56,7 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
   },
 
   discoverClue: (clueId, discoveredBy, day) => {
-    const { discoveredClues, progress } = get();
+    const { discoveredClues } = get();
     
     if (discoveredClues.some((c) => c.id === clueId)) {
       return undefined;

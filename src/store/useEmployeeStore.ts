@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import type { Employee, EmployeeMood, EmployeeStatus } from '../types/employee';
 import type { AreaType } from '../types/game';
 import { INITIAL_EMPLOYEES } from '../data/employees';
@@ -133,6 +134,8 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => {
 });
 
 export const useEmployees = () => useEmployeeStore((state) => state.employees);
-export const useEmployeeById = (id: string) => 
-  useEmployeeStore((state) => state.employees.find((e) => e.id === id));
+export const useEmployeeById = (id: string) =>
+  useEmployeeStore(
+    useShallow((state) => state.employees.find((e) => e.id === id))
+  );
 export const useEmployeeActions = () => useEmployeeStore((state) => state.actions);

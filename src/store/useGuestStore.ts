@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import type { Guest, GuestMood, GuestNeedStatus } from '../types/guest';
 import { GUEST_POOL, generateDailyGuests } from '../data/guests';
 import { useHotelStore } from './useHotelStore';
@@ -329,5 +330,7 @@ export const useGuestStore = create<GuestStore>((set, get) => {
 
 export const useCurrentGuests = () => useGuestStore((state) => state.currentGuests);
 export const useGuestById = (id: string) =>
-  useGuestStore((state) => state.currentGuests.find((g) => g.id === id));
+  useGuestStore(
+    useShallow((state) => state.currentGuests.find((g) => g.id === id))
+  );
 export const useGuestActions = () => useGuestStore((state) => state.actions);

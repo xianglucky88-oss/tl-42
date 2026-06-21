@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import type { GameState, GameSettings, DayPhase, GamePhase } from '../types/game';
 
 interface GameStore extends GameState {
@@ -102,5 +103,5 @@ export const useCurrentDay = () => useGameStore((state) => state.currentDay);
 export const useCurrentPhase = () => useGameStore((state) => state.currentPhase);
 export const useGamePhase = () => useGameStore((state) => state.gamePhase);
 export const useIsPaused = () => useGameStore((state) => state.isPaused);
-export const useGameSettings = () => useGameStore((state) => state.settings);
+export const useGameSettings = () => useGameStore(useShallow((state) => state.settings));
 export const useGameActions = () => useGameStore((state) => state.actions);

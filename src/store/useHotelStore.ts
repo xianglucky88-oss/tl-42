@@ -51,20 +51,6 @@ export const useHotelStore = create<HotelStore>((set, get) => {
     events: [],
   };
 
-  const updateHotel = () => {
-    const state = get();
-    return {
-      name: state.name,
-      description: state.description,
-      foundedYear: state.foundedYear,
-      money: state.money,
-      reputation: state.reputation,
-      rating: state.rating,
-      rooms: state.rooms,
-      facilities: state.facilities,
-    };
-  };
-
   return {
     ...INITIAL_HOTEL_DATA,
     rooms: [...INITIAL_ROOMS],

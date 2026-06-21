@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PixelButton, PixelPanel, PixelWindow } from '../ui';
 import type { MinigameType, OpponentType } from '../../types/minigame';
@@ -42,16 +42,27 @@ const OpponentSelector: React.FC<OpponentSelectorProps> = ({
   const availableEmployees = employees.filter((emp) => emp.status === 'idle');
   const availableGuests = guests.filter((g) => g.status === 'staying' && !g.isCheckOut);
 
-  const getSkillFromEmployee = (emp: typeof employees[0]): number => {
-    const gamePreferenceBias = Math.random() * 20 - 10;
-    return Math.max(10, Math.min(90, emp.skill + gamePreferenceBias));
-  };
+  const employeeSkills = useMemo(() => {
+    const map = new Map<string, number>();
+    availableEmployees.forEach((emp) => {
+      const gamePreferenceBias = Math.random() * 20 - 10;
+      map.set(emp.id, Math.max(10, Math.min(90, emp.skill + gamePreferenceBias)));
+    });
+    return map;
+  }, [availableEmployees]);
 
-  const getSkillFromGuest = (guest: typeof guests[0]): number => {
-    const ageBias = (guest.age - 40) * 0.2;
-    const personalityBias = guest.personality.includes('机敏') || guest.personality.includes('敏锐') ? 15 : 0;
-    return Math.max(10, Math.min(90, 50 + ageBias + personalityBias + (Math.random() * 20 - 10)));
-  };
+  const guestSkills = useMemo(() => {
+    const map = new Map<string, number>();
+    availableGuests.forEach((guest) => {
+      const ageBias = (guest.age - 40) * 0.2;
+      const personalityBias = guest.personality.includes('机敏') || guest.personality.includes('敏锐') ? 15 : 0;
+      map.set(
+        guest.id,
+        Math.max(10, Math.min(90, 50 + ageBias + personalityBias + (Math.random() * 20 - 10)))
+      );
+    });
+    return map;
+  }, [availableGuests]);
 
   const handleConfirm = () => {
     if (selectedOpponent && bet >= gameDef.minBet && bet <= gameDef.maxBet) {
@@ -190,7 +201,7 @@ const OpponentSelector: React.FC<OpponentSelectorProps> = ({
                           id: emp.id,
                           name: emp.name,
                           avatar: emp.avatar,
-                          skill: getSkillFromEmployee(emp),
+                          skill: employeeSkills.get(emp.id) || 50,
                           description: emp.description,
                         },
                         'employee'
@@ -224,7 +235,7 @@ const OpponentSelector: React.FC<OpponentSelectorProps> = ({
                           id: guest.id,
                           name: guest.name,
                           avatar: guest.avatar,
-                          skill: getSkillFromGuest(guest),
+                          skill: guestSkills.get(guest.id) || 50,
                           description: guest.occupation,
                         },
                         'guest'

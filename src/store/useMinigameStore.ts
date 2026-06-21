@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import type {
   MinigameState,
   MinigameType,
@@ -199,17 +200,23 @@ export const useCurrentMinigame = () => useMinigameStore((state) => state.curren
 export const useMinigameStatus = () => useMinigameStore((state) => state.status);
 export const useMinigameBet = () => useMinigameStore((state) => state.bet);
 export const useMinigameOpponent = () => useMinigameStore((state) => state.opponent);
-export const useMinigameScores = () => useMinigameStore((state) => ({
-  playerScore: state.playerScore,
-  opponentScore: state.opponentScore,
-}));
+export const useMinigameScores = () =>
+  useMinigameStore(
+    useShallow((state) => ({
+      playerScore: state.playerScore,
+      opponentScore: state.opponentScore,
+    }))
+  );
 export const useMinigameRewards = () => useMinigameStore((state) => state.rewards);
 export const useMinigameHistory = () => useMinigameStore((state) => state.gameHistory);
-export const useMinigameStats = () => useMinigameStore((state) => ({
-  totalWins: state.totalWins,
-  totalLosses: state.totalLosses,
-  totalDraws: state.totalDraws,
-  totalMoneyWon: state.totalMoneyWon,
-  totalMoneyLost: state.totalMoneyLost,
-}));
+export const useMinigameStats = () =>
+  useMinigameStore(
+    useShallow((state) => ({
+      totalWins: state.totalWins,
+      totalLosses: state.totalLosses,
+      totalDraws: state.totalDraws,
+      totalMoneyWon: state.totalMoneyWon,
+      totalMoneyLost: state.totalMoneyLost,
+    }))
+  );
 export const useMinigameActions = () => useMinigameStore((state) => state.actions);

@@ -48,6 +48,16 @@ const Blackjack: React.FC<BlackjackProps> = ({ isOpen, onClose }) => {
   const [message, setMessage] = useState('');
   const [isDealing, setIsDealing] = useState(false);
 
+  const finishGame = useCallback((result: 'win' | 'lose' | 'draw') => {
+    if (result === 'win') {
+      endGame('won');
+    } else if (result === 'lose') {
+      endGame('lost');
+    } else {
+      endGame('draw');
+    }
+  }, [endGame]);
+
   const initializeGame = useCallback(() => {
     const dealInitialCardsLocal = (currentDeck: Card[]) => {
       const newDeck = [...currentDeck];
@@ -177,16 +187,6 @@ const Blackjack: React.FC<BlackjackProps> = ({ isOpen, onClose }) => {
       setTimeout(() => playDealerTurn(newDeck, newDealerHand, currentPlayerHand), 800);
     }
   };
-
-  const finishGame = useCallback((result: 'win' | 'lose' | 'draw') => {
-    if (result === 'win') {
-      endGame('won');
-    } else if (result === 'lose') {
-      endGame('lost');
-    } else {
-      endGame('draw');
-    }
-  }, [endGame]);
 
   const handleClose = () => {
     closeGame();

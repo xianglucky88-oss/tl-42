@@ -8,6 +8,7 @@ import {
   GuestsPage,
   StoryPage,
   SettingsPage,
+  MinigamesPage,
 } from './pages';
 import {
   GameContainer,
@@ -42,6 +43,7 @@ function App() {
               <Route path="/management" element={<ManagementPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/guests" element={<GuestsPage />} />
+              <Route path="/minigames" element={<MinigamesPage />} />
               <Route path="/story" element={<StoryPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>

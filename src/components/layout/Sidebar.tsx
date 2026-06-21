@@ -8,6 +8,7 @@ import {
   UserCheck,
   BookOpen,
   Settings,
+  Gamepad2,
   FastForward,
   Pause,
   Play,
@@ -23,6 +24,7 @@ const navItems = [
   { path: '/management', label: '日常管理', icon: Users },
   { path: '/inventory', label: '库存管理', icon: Package },
   { path: '/guests', label: '客人接待', icon: UserCheck },
+  { path: '/minigames', label: '迷你游戏', icon: Gamepad2 },
   { path: '/story', label: '故事档案', icon: BookOpen },
   { path: '/settings', label: '系统设置', icon: Settings },
 ];

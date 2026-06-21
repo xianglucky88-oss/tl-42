@@ -5,3 +5,4 @@ export { default as InventoryPage } from './InventoryPage';
 export { default as GuestsPage } from './GuestsPage';
 export { default as StoryPage } from './StoryPage';
 export { default as SettingsPage } from './SettingsPage';
+export { default as MinigamesPage } from './MinigamesPage';

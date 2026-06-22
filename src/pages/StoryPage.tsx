@@ -59,9 +59,9 @@ const StoryPage: React.FC = () => {
 
   if (viewMode === 'corkboard') {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="absolute inset-0 flex flex-col">
         <motion.div
-          className="flex items-center justify-between px-4 py-3 border-b-3 border-[var(--pixel-border)] bg-[var(--pixel-bg-dark)]"
+          className="flex items-center justify-between px-4 py-3 border-b-3 border-[var(--pixel-border)] bg-[var(--pixel-bg-dark)] flex-shrink-0"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -89,7 +89,9 @@ const StoryPage: React.FC = () => {
             </PixelButton>
           </div>
         </motion.div>
-        <CorkBoard />
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <CorkBoard />
+        </div>
       </div>
     );
   }

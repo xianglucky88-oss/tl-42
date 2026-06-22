@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Pin, Link2, Move, Trash2, Unlock, Sparkles, Plus, X } from 'lucide-react';
+import { Pin, Link2, Move, Unlock, Sparkles, Plus, X } from 'lucide-react';
 import { PixelButton, PixelBadge } from '../ui';
 import { useStoryStore } from '../../store/useStoryStore';
 import { useCurrentDay } from '../../store/useGameStore';
 import { STORY_FRAGMENTS } from '../../data/stories';
+import CorkNote from './CorkNote';
 import type { Clue } from '../../types/story';
 
 type BoardMode = 'move' | 'pin' | 'connect';
@@ -49,6 +50,9 @@ const rarityNames: Record<string, string> = {
   epic: '史诗',
   legendary: '传说',
 };
+
+const CARD_W = 180;
+const CARD_H = 110;
 
 const CorkBoard: React.FC = () => {
   const discoveredClues = useStoryStore((s) => s.discoveredClues);
@@ -197,11 +201,11 @@ const CorkBoard: React.FC = () => {
   }, [connections, boardCards, progress.unlockedFragments, unlockStoryFragment, checkForUnlocks, getConnectedGroup, currentDay]);
 
   const getCardCenter = useCallback((pos: CardPosition) => {
-    return { x: pos.x + 90, y: pos.y + 55 };
+    return { x: pos.x + CARD_W / 2, y: pos.y + CARD_H / 2 };
   }, []);
 
   return (
-    <div className="flex-1 flex overflow-hidden relative">
+    <div className="corkboard-root">
       <AnimatePresence>
         {unlockAnimations.map((anim) => (
           <motion.div
@@ -275,7 +279,7 @@ const CorkBoard: React.FC = () => {
         )}
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="corkboard-main">
         <div className="corkboard-toolbar">
           <div className="flex items-center gap-1">
             <PixelButton
@@ -339,7 +343,7 @@ const CorkBoard: React.FC = () => {
 
         <div
           ref={boardRef}
-          className="flex-1 corkboard-canvas pixel-scrollbar overflow-auto relative"
+          className="corkboard-canvas pixel-scrollbar"
         >
           <svg className="corkboard-connections-layer">
             {connections.map((conn) => {
@@ -374,88 +378,25 @@ const CorkBoard: React.FC = () => {
 
           {cluesOnBoard.map(({ clueId, x, y, clue }) => {
             if (!clue) return null;
-            const isPinned = pinnedClues.has(clueId);
-            const isConnecting = connectingFrom === clueId;
-            const isConnected = connections.some((c) => c.from === clueId || c.to === clueId);
 
             return (
-              <motion.div
+              <div
                 key={clueId}
-                className={`corkboard-card ${isPinned ? 'corkboard-card-pinned' : ''} ${isConnecting ? 'corkboard-card-connecting' : ''} ${isConnected ? 'corkboard-card-linked' : ''}`}
-                style={{
-                  left: x,
-                  top: y,
-                  zIndex: isConnecting ? 100 : nextZIndex.current,
-                  '--card-rarity-color': rarityBorderColors[clue.rarity],
-                  '--card-rarity-glow': rarityColors[clue.rarity],
-                } as React.CSSProperties}
-                initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
-                animate={{ opacity: 1, scale: 1, rotate: clue.isKey ? -1 + Math.random() * 2 : -3 + Math.random() * 6 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                drag={mode === 'move'}
-                dragMomentum={false}
-                onDragStart={() => { nextZIndex.current += 1; }}
-                onDragEnd={(_, info) => handleDragEnd(clueId, _, info)}
-                onClick={() => handleCardClick(clueId)}
-                whileDrag={{ scale: 1.08, zIndex: 200 }}
+                style={{ position: 'absolute', left: x, top: y }}
               >
-                {isPinned && (
-                  <div className="corkboard-pin">
-                    <Pin size={16} className="text-red-500 fill-red-500" />
-                  </div>
-                )}
-
-                {clue.isKey && !isPinned && (
-                  <div className="corkboard-pin corkboard-pin-key">
-                    <Pin size={12} className="text-[var(--pixel-gold)] fill-[var(--pixel-gold)]" />
-                  </div>
-                )}
-
-                <div className="corkboard-card-accent" style={{ backgroundColor: rarityColors[clue.rarity] }} />
-
-                <div className="corkboard-card-content">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-sm">{clue.icon}</span>
-                    <p className="pixel-font-mono text-[8px] text-[var(--pixel-text-primary)] font-bold truncate flex-1">
-                      {clue.title}
-                    </p>
-                  </div>
-
-                  <p className="pixel-font-mono text-[7px] text-[var(--pixel-text-secondary)] line-clamp-2 leading-relaxed mb-1.5">
-                    {clue.description}
-                  </p>
-
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className="pixel-font-mono text-[6px] px-1 py-0.5 border"
-                      style={{
-                        color: rarityColors[clue.rarity],
-                        borderColor: rarityColors[clue.rarity],
-                      }}
-                    >
-                      {rarityNames[clue.rarity]}
-                    </span>
-                    {clue.year && (
-                      <span className="pixel-font-mono text-[6px] text-[var(--pixel-text-secondary)]">
-                        {clue.year}年
-                      </span>
-                    )}
-                    {clue.isKey && (
-                      <span className="pixel-font-mono text-[6px] text-[var(--pixel-gold)]">★ 关键</span>
-                    )}
-                  </div>
-                </div>
-
-                {mode === 'move' && (
-                  <button
-                    className="corkboard-card-remove"
-                    onClick={(e) => { e.stopPropagation(); removeClueFromBoard(clueId); }}
-                  >
-                    <X size={10} />
-                  </button>
-                )}
-              </motion.div>
+                <CorkNote
+                  clue={clue}
+                  isPinned={pinnedClues.has(clueId)}
+                  isConnecting={connectingFrom === clueId}
+                  isConnected={connections.some((c) => c.from === clueId || c.to === clueId)}
+                  isMoveMode={mode === 'move'}
+                  zIndex={nextZIndex.current}
+                  onDragStart={() => { nextZIndex.current += 1; }}
+                  onDragEnd={(_, info) => handleDragEnd(clueId, _, info)}
+                  onClick={() => handleCardClick(clueId)}
+                  onRemove={() => removeClueFromBoard(clueId)}
+                />
+              </div>
             );
           })}
 

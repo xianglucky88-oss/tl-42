@@ -6,3 +6,4 @@ export { default as ClueCard } from './ClueCard';
 export { default as HotelStatus } from './HotelStatus';
 export { default as ScheduleBoard } from './ScheduleBoard';
 export { default as CorkBoard } from './CorkBoard';
+export { default as CorkNote } from './CorkNote';

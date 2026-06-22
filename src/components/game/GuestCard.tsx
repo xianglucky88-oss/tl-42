@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { User, MessageCircle, Eye, Star, Clock, AlertTriangle, CheckCircle, Package, BookOpen, History } from 'lucide-react';
 import { Guest } from '../../types/guest';
@@ -30,31 +30,56 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
   const dialogueHistory = useGuestDialogueHistory(guest.id);
   const { saveDialogueRecord } = useStoryStore.getState();
 
-  const [prevIsEnded, setPrevIsEnded] = useState(false);
+  const prevIsEndedRef = useRef(false);
+  const dialogueSavedRef = useRef(false);
+  const dialogueStateRef = useRef(dialogueState);
+  const currentDayRef = useRef(currentDay);
 
   useEffect(() => {
-    if (dialogueState.isEnded && !prevIsEnded && dialogueState.guestId === guest.id) {
-      const clueIds: string[] = [];
-      if (dialogueState.lastEffect?.clueId) {
-        clueIds.push(dialogueState.lastEffect.clueId);
-      }
+    dialogueStateRef.current = dialogueState;
+  }, [dialogueState]);
 
-      const repChange = dialogueState.lastEffect?.reputation || 0;
+  useEffect(() => {
+    currentDayRef.current = currentDay;
+  }, [currentDay]);
 
-      saveDialogueRecord(guest.id, {
-        guestId: guest.id,
-        guestName: guest.name,
-        guestAvatar: guest.avatar,
-        day: currentDay,
-        branches: dialogueState.dialogueTree,
-        selectedPath: dialogueState.selectedPathIds,
-        discoveredClueIds: clueIds,
-        reputationChanges: repChange,
-        completed: true,
-      });
+  const saveCurrentDialogue = useCallback(() => {
+    const state = dialogueStateRef.current;
+    if (!state.dialogueTree || state.dialogueTree.length === 0) return;
+    if (state.selectedPathIds.length === 0) return;
+
+    const clueIds: string[] = [];
+    if (state.lastEffect?.clueId) {
+      clueIds.push(state.lastEffect.clueId);
     }
-    setPrevIsEnded(dialogueState.isEnded);
-  }, [dialogueState.isEnded, dialogueState.guestId, guest.id, dialogueState.dialogueTree, dialogueState.selectedPathIds, dialogueState.lastEffect, currentDay, saveDialogueRecord]);
+
+    const repChange = state.lastEffect?.reputation || 0;
+
+    saveDialogueRecord(guest.id, {
+      guestId: guest.id,
+      guestName: guest.name,
+      guestAvatar: guest.avatar,
+      day: currentDayRef.current,
+      branches: state.dialogueTree,
+      selectedPath: state.selectedPathIds,
+      discoveredClueIds: clueIds,
+      reputationChanges: repChange,
+      completed: true,
+    });
+  }, [guest.id, guest.name, guest.avatar, saveDialogueRecord]);
+
+  useEffect(() => {
+    if (
+      dialogueState.isEnded &&
+      !prevIsEndedRef.current &&
+      dialogueState.guestId === guest.id &&
+      !dialogueSavedRef.current
+    ) {
+      saveCurrentDialogue();
+      dialogueSavedRef.current = true;
+    }
+    prevIsEndedRef.current = dialogueState.isEnded;
+  }, [dialogueState.isEnded, dialogueState.guestId, guest.id, saveCurrentDialogue]);
 
   const statusNames: Record<string, string> = {
     checking_in: '入住中',
@@ -79,7 +104,8 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
         reputation,
       });
       setShowDialogue(true);
-      setPrevIsEnded(false);
+      prevIsEndedRef.current = false;
+      dialogueSavedRef.current = false;
     }
   };
 
@@ -380,6 +406,10 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
       <PixelWindow
         isOpen={showDialogue}
         onClose={() => {
+          if (dialogueState.isEnded && !dialogueSavedRef.current) {
+            saveCurrentDialogue();
+            dialogueSavedRef.current = true;
+          }
           endDialogue();
           setShowDialogue(false);
         }}
@@ -466,6 +496,10 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
                   variant="warning"
                   className="flex-1"
                   onClick={() => {
+                    if (!dialogueSavedRef.current) {
+                      saveCurrentDialogue();
+                      dialogueSavedRef.current = true;
+                    }
                     setShowHistory(true);
                     endDialogue();
                     setShowDialogue(false);
@@ -480,6 +514,10 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
                   variant="primary"
                   className="flex-1"
                   onClick={() => {
+                    if (!dialogueSavedRef.current) {
+                      saveCurrentDialogue();
+                      dialogueSavedRef.current = true;
+                    }
                     endDialogue();
                     setShowDialogue(false);
                   }}

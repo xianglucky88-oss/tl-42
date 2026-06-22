@@ -14,8 +14,9 @@ import {
 import { useCurrentGuests, useGuestReviews, useGuestActions } from '../store/useGuestStore';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { getQualityColor } from '../utils/pixel';
-import type { SentimentKeyword } from '../types/guest';
-import { useHotelAttributes } from '../store/useHotelStore';
+import type { SentimentKeyword, HotelAttributeKey } from '../types/guest';
+import { useHotelAttributes, useHotelActions, useHotelMoney } from '../store/useHotelStore';
+import { getBadReviewResolveLevel } from '../data/hotel';
 
 const statusNames: Record<string, string> = {
   all: '全部',
@@ -33,6 +34,8 @@ const GuestsPage: React.FC = () => {
   const guestActions = useGuestActions();
   const { addRandomGuest } = useGameLoop();
   const hotelAttributes = useHotelAttributes();
+  const hotelActions = useHotelActions();
+  const hotelMoney = useHotelMoney();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<TabType>('reception');
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
@@ -69,9 +72,28 @@ const GuestsPage: React.FC = () => {
     setUpgradeModalOpen(true);
   };
 
-  const handleUpgradeSuccess = (message: string, resolvedCount: number) => {
-    setToast({ message, type: 'success' });
+  const handleUpgrade = (attributeKey: HotelAttributeKey) => {
+    const result = hotelActions.upgradeAttribute(attributeKey);
+    if (!result.success) {
+      setToast({ message: result.message, type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    let resolvedCount = 0;
+    let finalMessage = result.message;
+
+    if (result.shouldResolve) {
+      const resolvedIds = guestActions.resolveBadReviewsForAttribute(attributeKey, result.newLevel || 0);
+      resolvedCount = resolvedIds.length;
+      if (resolvedCount > 0) {
+        finalMessage = `${result.message} 自动消除了 ${resolvedCount} 条差评！`;
+      }
+    }
+
+    setToast({ message: finalMessage, type: 'success' });
     setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setUpgradeModalOpen(false), 800);
   };
 
   const tabs: { key: TabType; label: string; icon: React.ReactNode }[] = [
@@ -527,7 +549,7 @@ const GuestsPage: React.FC = () => {
         isOpen={upgradeModalOpen}
         onClose={() => setUpgradeModalOpen(false)}
         keyword={selectedKeyword}
-        onUpgradeSuccess={handleUpgradeSuccess}
+        onUpgrade={handleUpgrade}
       />
     </div>
   );

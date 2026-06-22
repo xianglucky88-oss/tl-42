@@ -9,20 +9,27 @@ import { getUpgradeCost, ATTRIBUTE_META, getBadReviewResolveLevel } from '../../
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  attributeKey?: HotelAttributeKey | null;
   keyword?: SentimentKeyword | null;
-  onUpgradeSuccess?: (message: string, resolvedCount: number) => void;
+  onUpgrade?: (attributeKey: HotelAttributeKey) => void;
 }
 
-const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, keyword, onUpgradeSuccess }) => {
+const UpgradeModal: React.FC<UpgradeModalProps> = ({
+  isOpen,
+  onClose,
+  attributeKey: propAttributeKey,
+  keyword,
+  onUpgrade,
+}) => {
   const hotelAttributes = useHotelAttributes();
   const money = useHotelMoney();
   const hotelActions = useHotelActions();
 
   const targetAttribute = useMemo((): HotelAttributeKey | null => {
-    if (!keyword) return null;
-    if (keyword.relatedAttribute) return keyword.relatedAttribute;
+    if (propAttributeKey) return propAttributeKey;
+    if (keyword?.relatedAttribute) return keyword.relatedAttribute;
     return null;
-  }, [keyword]);
+  }, [propAttributeKey, keyword]);
 
   const attributeInfo = useMemo(() => {
     if (!targetAttribute) return null;
@@ -33,21 +40,46 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, keyword, o
     if (!targetAttribute) return null;
     const check = hotelActions.canUpgradeAttribute(targetAttribute);
     const resolveLevel = getBadReviewResolveLevel(targetAttribute);
+    const meta = ATTRIBUTE_META[targetAttribute];
     return {
       ...check,
       resolveLevel,
-      meta: ATTRIBUTE_META[targetAttribute],
+      meta,
     };
   }, [targetAttribute, hotelActions]);
 
   const handleUpgrade = () => {
     if (!targetAttribute || !upgradeData?.canUpgrade) return;
-    const result = hotelActions.upgradeAttribute(targetAttribute);
-    if (result.success) {
-      onUpgradeSuccess?.(result.message, result.resolvedReviews?.length || 0);
-      setTimeout(onClose, 800);
-    }
+    onUpgrade?.(targetAttribute);
   };
+
+  if (!targetAttribute || !attributeInfo || !upgradeData) {
+    return (
+      <AnimatePresence>
+        {isOpen && (
+          <PixelWindow isOpen={isOpen} onClose={onClose} title="升级酒店属性" width="480px">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="text-center py-8"
+            >
+              <AlertTriangle size={40} className="text-[var(--pixel-warning)] mx-auto mb-3" />
+              <p className="pixel-font-mono text-sm text-[var(--pixel-text-primary)] mb-2">
+                {keyword ? `"${keyword.word}" 暂未关联到可升级的属性` : '请选择要升级的属性'}
+              </p>
+              <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)] mb-4">
+                可在「满意度分析」页点击属性卡片进行升级
+              </p>
+              <PixelButton variant="default" onClick={onClose}>
+                关闭
+              </PixelButton>
+            </motion.div>
+          </PixelWindow>
+        )}
+      </AnimatePresence>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -102,138 +134,125 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, keyword, o
                     </PixelBadge>
                   </div>
                   <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)]">
-                    权重: {keyword.weight}
+                    关联属性：{upgradeData.meta.name} · 权重: {keyword.weight}
                   </p>
                 </div>
               </div>
             )}
 
-            {attributeInfo && upgradeData && (
-              <>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{upgradeData.meta.icon}</span>
-                      <div>
-                        <p className="pixel-font-display text-sm text-[var(--pixel-text-primary)]">
-                          {attributeInfo.name}
-                        </p>
-                        <p className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
-                          {upgradeData.meta.description}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: attributeInfo.maxLevel }).map((_, i) => (
-                        <Star
-                          key={i}
-                          size={12}
-                          className={i < attributeInfo.level ? 'text-[var(--pixel-gold)] fill-current' : 'text-[var(--pixel-border)]'}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <PixelProgress
-                    value={attributeInfo.level}
-                    max={attributeInfo.maxLevel}
-                    label={`Lv.${attributeInfo.level} / Lv.${attributeInfo.maxLevel}`}
-                    variant="quality"
-                    size="md"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-[var(--pixel-bg-dark)] border-2 border-[var(--pixel-border)]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Coins size={14} className="text-[var(--pixel-gold)]" />
-                      <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
-                        升级费用
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                      <span
-                        className={`pixel-font-display text-xl ${money >= upgradeData.cost ? 'text-[var(--pixel-gold)]' : 'text-[var(--pixel-danger)]'}`}
-                      >
-                        {upgradeData.cost}
-                      </span>
-                      <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
-                        / 当前 {money}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-[var(--pixel-bg-dark)] border-2 border-[var(--pixel-border)]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <TrendingUp size={14} className="text-[var(--pixel-info)]" />
-                      <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
-                        差评消除等级
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                      <span className={`pixel-font-display text-xl ${attributeInfo.level >= upgradeData.resolveLevel ? 'text-[var(--pixel-success)]' : 'text-[var(--pixel-text-secondary)]'}`}>
-                        Lv.{upgradeData.resolveLevel}
-                      </span>
-                      <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
-                        {attributeInfo.level >= upgradeData.resolveLevel ? '已达成' : `还差 ${upgradeData.resolveLevel - attributeInfo.level} 级`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {attributeInfo.level < upgradeData.resolveLevel && (
-                  <div className="flex items-start gap-2 p-2 bg-[var(--pixel-bg-medium)] border-2 border-[var(--pixel-info)] opacity-80">
-                    <AlertTriangle size={14} className="text-[var(--pixel-info)] shrink-0 mt-0.5" />
-                    <p className="pixel-font-mono text-[10px] text-[var(--pixel-text-primary)]">
-                      升级到 Lv.{upgradeData.resolveLevel} 后，可自动消除与 "{upgradeData.meta.name}" 相关的差评，
-                      并提升客人对该维度的满意度评分。
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{upgradeData.meta.icon}</span>
+                  <div>
+                    <p className="pixel-font-display text-sm text-[var(--pixel-text-primary)]">
+                      {attributeInfo.name}
+                    </p>
+                    <p className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
+                      {upgradeData.meta.description}
                     </p>
                   </div>
-                )}
-
-                {attributeInfo.level >= upgradeData.resolveLevel && (
-                  <div className="flex items-start gap-2 p-2 bg-[var(--pixel-bg-medium)] border-2 border-[var(--pixel-success)]">
-                    <CheckCircle size={14} className="text-[var(--pixel-success)] shrink-0 mt-0.5" />
-                    <p className="pixel-font-mono text-[10px] text-[var(--pixel-text-primary)]">
-                      已达到差评消除等级！继续升级可进一步提升满意度维度上限。
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-2">
-                  <PixelButton
-                    variant="default"
-                    onClick={onClose}
-                    className="flex-1"
-                  >
-                    <span className="flex items-center justify-center gap-1">
-                      <X size={12} />
-                      取消
-                    </span>
-                  </PixelButton>
-                  <PixelButton
-                    variant={upgradeData.canUpgrade ? 'success' : 'default'}
-                    onClick={handleUpgrade}
-                    disabled={!upgradeData.canUpgrade}
-                    className="flex-1"
-                  >
-                    <span className="flex items-center justify-center gap-1">
-                      <Coins size={12} />
-                      {upgradeData.canUpgrade ? `升级 (${upgradeData.cost}金)` : upgradeData.reason}
-                    </span>
-                  </PixelButton>
                 </div>
-              </>
-            )}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: attributeInfo.maxLevel }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={10}
+                      className={i < attributeInfo.level ? 'text-[var(--pixel-gold)] fill-current' : 'text-[var(--pixel-border)]'}
+                    />
+                  ))}
+                </div>
+              </div>
 
-            {!attributeInfo && keyword && (
-              <div className="text-center py-4">
-                <AlertTriangle size={32} className="text-[var(--pixel-warning)] mx-auto mb-2" />
-                <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)]">
-                  该关键词暂未关联到可升级的属性
+              <PixelProgress
+                value={attributeInfo.level}
+                max={attributeInfo.maxLevel}
+                label={`Lv.${attributeInfo.level} / Lv.${attributeInfo.maxLevel}`}
+                variant="quality"
+                size="md"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-[var(--pixel-bg-dark)] border-2 border-[var(--pixel-border)]">
+                <div className="flex items-center gap-2 mb-1">
+                  <Coins size={14} className="text-[var(--pixel-gold)]" />
+                  <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
+                    升级费用
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span
+                    className={`pixel-font-display text-xl ${money >= upgradeData.cost ? 'text-[var(--pixel-gold)]' : 'text-[var(--pixel-danger)]'}`}
+                  >
+                    {upgradeData.cost}
+                  </span>
+                  <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
+                    / 当前 {money}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-[var(--pixel-bg-dark)] border-2 border-[var(--pixel-border)]">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp size={14} className="text-[var(--pixel-info)]" />
+                  <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
+                    差评消除等级
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className={`pixel-font-display text-xl ${attributeInfo.level >= upgradeData.resolveLevel ? 'text-[var(--pixel-success)]' : 'text-[var(--pixel-text-secondary)]'}`}>
+                    Lv.{upgradeData.resolveLevel}
+                  </span>
+                  <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
+                    {attributeInfo.level >= upgradeData.resolveLevel ? '已达成' : `还差 ${upgradeData.resolveLevel - attributeInfo.level} 级`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {attributeInfo.level < upgradeData.resolveLevel && (
+              <div className="flex items-start gap-2 p-2 bg-[var(--pixel-bg-medium)] border-2 border-[var(--pixel-info)] opacity-80">
+                <AlertTriangle size={14} className="text-[var(--pixel-info)] shrink-0 mt-0.5" />
+                <p className="pixel-font-mono text-[10px] text-[var(--pixel-text-primary)]">
+                  升级到 Lv.{upgradeData.resolveLevel} 后，可自动消除与 "{attributeInfo.name}" 相关的差评，
+                  并提升客人对该维度的满意度评分。
                 </p>
               </div>
             )}
+
+            {attributeInfo.level >= upgradeData.resolveLevel && (
+              <div className="flex items-start gap-2 p-2 bg-[var(--pixel-bg-medium)] border-2 border-[var(--pixel-success)]">
+                <CheckCircle size={14} className="text-[var(--pixel-success)] shrink-0 mt-0.5" />
+                <p className="pixel-font-mono text-[10px] text-[var(--pixel-text-primary)]">
+                  已达到差评消除等级！继续升级可进一步提升满意度维度上限。
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <PixelButton
+                variant="default"
+                onClick={onClose}
+                className="flex-1"
+              >
+                <span className="flex items-center justify-center gap-1">
+                  <X size={12} />
+                  取消
+                </span>
+              </PixelButton>
+              <PixelButton
+                variant={upgradeData.canUpgrade ? 'success' : 'default'}
+                onClick={handleUpgrade}
+                disabled={!upgradeData.canUpgrade}
+                className="flex-1"
+              >
+                <span className="flex items-center justify-center gap-1">
+                  <Coins size={12} />
+                  {upgradeData.canUpgrade ? `升级 (${upgradeData.cost}金)` : upgradeData.reason}
+                </span>
+              </PixelButton>
+            </div>
           </motion.div>
         </PixelWindow>
       )}

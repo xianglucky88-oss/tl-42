@@ -1,4 +1,4 @@
-import type { Guest, SatisfactionDimensions, SentimentKeyword, GuestReview } from '../types/guest';
+import type { Guest, SatisfactionDimensions, SentimentKeyword, GuestReview, HotelAttributeKey } from '../types/guest';
 import { KEYWORD_TO_ATTRIBUTE } from './hotel';
 
 export const GUEST_POOL: Guest[] = [
@@ -441,6 +441,54 @@ export function generateRandomKeywords(satisfaction: number): SentimentKeyword[]
   }
 
   return keywords;
+}
+
+const ATTRIBUTE_KEYWORDS: Record<string, string[]> = {
+  room: ['房间小', '隔音差', '舒适', '有特色', '床', '装修', '拥挤'],
+  service: ['服务好', '热情', '周到', '贴心', '专业', '友好', '冷漠', '前台好', '满意', '推荐', '值得', '惊喜', '失望', '态度'],
+  food: ['美味', '早餐一般', '菜好吃', '茶点不错', '咖啡不错', '软食可口', '餐饮'],
+  facilities: ['设施陈旧', '空调一般', '老旧', '糟糕', '闷热', '设备'],
+  location: ['历史感', '位置好', '氛围好', '有故事感', '怀旧', '安静舒适', '温馨', '回忆满满', '方便', '灵感'],
+  cleanliness: ['干净', '整洁', '脏乱', '清洁', '卫生', '异味'],
+};
+
+export function ensureKeywordHasAttribute(keyword: SentimentKeyword, fallbackAttribute?: HotelAttributeKey): SentimentKeyword {
+  if (keyword.relatedAttribute) return keyword;
+
+  const directMatch = KEYWORD_TO_ATTRIBUTE[keyword.word];
+  if (directMatch) {
+    return { ...keyword, relatedAttribute: directMatch };
+  }
+
+  if (fallbackAttribute) {
+    return { ...keyword, relatedAttribute: fallbackAttribute };
+  }
+
+  let bestMatch: HotelAttributeKey = 'service';
+  let bestScore = 0;
+
+  const entries = Object.entries(ATTRIBUTE_KEYWORDS) as [HotelAttributeKey, string[]][];
+  for (const [attr, words] of entries) {
+    let score = 0;
+    for (const word of words) {
+      if (keyword.word.includes(word) || word.includes(keyword.word)) {
+        score += 2;
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = attr;
+    }
+  }
+
+  return { ...keyword, relatedAttribute: bestMatch };
+}
+
+export function ensureAllKeywordsHaveAttributes(
+  keywords: SentimentKeyword[],
+  defaultAttribute?: HotelAttributeKey
+): SentimentKeyword[] {
+  return keywords.map(kw => ensureKeywordHasAttribute(kw, defaultAttribute));
 }
 
 export function generateDailyGuests(day: number): Guest[] {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import type { Guest, GuestMood, GuestNeedStatus, GuestReview, SatisfactionDimensions, SentimentKeyword, HotelAttributeKey } from '../types/guest';
-import { GUEST_POOL, generateDailyGuests, SAMPLE_REVIEWS, generateRandomDimensions, generateRandomKeywords } from '../data/guests';
+import { GUEST_POOL, generateDailyGuests, SAMPLE_REVIEWS, generateRandomDimensions, generateRandomKeywords, ensureAllKeywordsHaveAttributes } from '../data/guests';
 import { useHotelStore } from './useHotelStore';
 
 interface GuestStore {
@@ -44,6 +44,16 @@ interface GuestStore {
 }
 
 export const useGuestStore = create<GuestStore>((set, get) => {
+  const normalizedGuestPool = GUEST_POOL.map(guest => ({
+    ...guest,
+    sentimentKeywords: ensureAllKeywordsHaveAttributes(guest.sentimentKeywords || []),
+  }));
+
+  const normalizedSampleReviews = SAMPLE_REVIEWS.map(review => ({
+    ...review,
+    keywords: ensureAllKeywordsHaveAttributes(review.keywords),
+  }));
+
   const addGuest = (guest: Guest) => {
     const hotelRooms = useHotelStore.getState().rooms;
     const availableRoom = hotelRooms.find((r) => !r.isOccupied);
@@ -107,7 +117,11 @@ export const useGuestStore = create<GuestStore>((set, get) => {
 
   const generateReviewFromGuest = (guest: Guest): GuestReview => {
     const rating = Math.max(1, Math.min(5, Math.round(guest.satisfaction / 20)));
-    const hasNegativeKeywords = guest.sentimentKeywords?.some(kw => kw.polarity === 'negative');
+    const rawKeywords = guest.sentimentKeywords && guest.sentimentKeywords.length > 0
+      ? guest.sentimentKeywords
+      : generateRandomKeywords(guest.satisfaction);
+    const keywords = ensureAllKeywordsHaveAttributes(rawKeywords);
+    const hasNegativeKeywords = keywords.some(kw => kw.polarity === 'negative');
     const isBadReview = rating <= 3 || guest.satisfaction < 60 || !!hasNegativeKeywords;
     return {
       id: `review_${guest.id}_${Date.now()}`,
@@ -115,9 +129,7 @@ export const useGuestStore = create<GuestStore>((set, get) => {
       guestName: guest.name,
       rating,
       content: '',
-      keywords: guest.sentimentKeywords && guest.sentimentKeywords.length > 0 
-        ? guest.sentimentKeywords 
-        : generateRandomKeywords(guest.satisfaction),
+      keywords,
       dimensions: guest.satisfactionDimensions && Object.keys(guest.satisfactionDimensions).length > 0
         ? guest.satisfactionDimensions
         : generateRandomDimensions(guest.satisfaction),
@@ -134,8 +146,8 @@ export const useGuestStore = create<GuestStore>((set, get) => {
   return {
     currentGuests: [],
     guests: [],
-    guestPool: [...GUEST_POOL],
-    guestReviews: [...SAMPLE_REVIEWS],
+    guestPool: normalizedGuestPool,
+    guestReviews: normalizedSampleReviews,
     addGuest,
     meetNeed,
     addObservation,
@@ -457,15 +469,18 @@ export const useGuestStore = create<GuestStore>((set, get) => {
 
       resolveBadReviewsForAttribute: (attributeKey, attributeLevel) => {
         const resolvedIds: string[] = [];
+        const normalizedKey = attributeKey as keyof SatisfactionDimensions;
         set((state) => ({
           guestReviews: state.guestReviews.map((review) => {
             if (review.isResolved || !review.isBadReview) return review;
-            const hasAttributeKeyword = review.keywords.some(
+            const keywordsWithAttr = review.keywords.filter(
               (kw) => kw.relatedAttribute === attributeKey && kw.polarity === 'negative'
             );
-            const attributeScore = review.dimensions[attributeKey];
-            const threshold = 50 + (attributeLevel - 3) * 8;
-            if (hasAttributeKeyword && attributeScore < threshold) {
+            const hasNegativeKeyword = keywordsWithAttr.length > 0;
+            if (!hasNegativeKeyword) return review;
+            const attributeScore = review.dimensions[normalizedKey] || 50;
+            const maxResolvableScore = 40 + attributeLevel * 8;
+            if (attributeScore <= maxResolvableScore) {
               resolvedIds.push(review.id);
               return {
                 ...review,

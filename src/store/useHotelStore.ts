@@ -19,6 +19,9 @@ interface HotelData {
 interface UpgradeResult {
   success: boolean;
   message: string;
+  newLevel?: number;
+  resolveLevel?: number;
+  shouldResolve?: boolean;
   resolvedReviews?: string[];
 }
 
@@ -219,33 +222,17 @@ export const useHotelStore = create<HotelStore>((set, get) => {
           };
         });
 
-        const resolveLevel = getBadReviewResolveLevel(attributeKey);
-        const resolvedReviews: string[] = [];
-
-        if (newLevel >= resolveLevel) {
-          try {
-            const guestModule = require('../store/useGuestStore');
-            const guestStore = guestModule.useGuestStore?.getState?.();
-            if (guestStore && guestStore.actions) {
-              const resolved = guestStore.actions.resolveBadReviewsForAttribute?.(attributeKey, newLevel) || [];
-              resolvedReviews.push(...resolved);
-            }
-          } catch (e) {
-            // ignore
-          }
-        }
-
         const attrMeta = get().hotelAttributes.find(a => a.key === attributeKey);
-        if (resolvedReviews.length > 0) {
-          return {
-            success: true,
-            message: `${attrMeta?.name}升级到 Lv.${newLevel}！自动消除了 ${resolvedReviews.length} 条差评`,
-            resolvedReviews,
-          };
-        }
+        const resolveLevel = getBadReviewResolveLevel(attributeKey);
+        const shouldResolve = newLevel >= resolveLevel;
+
         return {
           success: true,
           message: `${attrMeta?.name}成功升级到 Lv.${newLevel}！`,
+          newLevel,
+          resolveLevel,
+          shouldResolve,
+          resolvedReviews: [],
         };
       },
 

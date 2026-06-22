@@ -123,6 +123,8 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
 
     storyFragments.forEach((fragment) => {
       if (!progress.unlockedFragments.includes(fragment.id)) {
+        if (fragment.requiredClueIds.length > 1) return;
+
         const hasAllClues = fragment.requiredClueIds.every((clueId) =>
           discoveredClueIds.includes(clueId)
         );

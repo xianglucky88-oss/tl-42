@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Pin, Link2, Move, Trash2, Unlock, Sparkles, Plus, X } from 'lucide-react';
 import { PixelButton, PixelBadge } from '../ui';
 import { useStoryStore } from '../../store/useStoryStore';
+import { useCurrentDay } from '../../store/useGameStore';
 import { STORY_FRAGMENTS } from '../../data/stories';
 import type { Clue } from '../../types/story';
 
@@ -51,11 +52,10 @@ const rarityNames: Record<string, string> = {
 
 const CorkBoard: React.FC = () => {
   const discoveredClues = useStoryStore((s) => s.discoveredClues);
-  const storyFragments = useStoryStore((s) => s.storyFragments);
   const progress = useStoryStore((s) => s.progress);
   const unlockStoryFragment = useStoryStore((s) => s.unlockStoryFragment);
   const checkForUnlocks = useStoryStore((s) => s.checkForUnlocks);
-  const currentDay = useStoryStore((s) => s.discoveredClues.length);
+  const currentDay = useCurrentDay();
 
   const [boardCards, setBoardCards] = useState<CardPosition[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);

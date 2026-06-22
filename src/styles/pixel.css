@@ -663,3 +663,239 @@ h1, h2, h3, h4, h5, h6 {
   padding: 12px;
   box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.3);
 }
+
+.corkboard-canvas {
+  background-color: #8B6914;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgba(0, 0, 0, 0.02) 3px,
+      rgba(0, 0, 0, 0.02) 6px
+    ),
+    radial-gradient(ellipse at 20% 30%, rgba(180, 140, 60, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(160, 120, 40, 0.2) 0%, transparent 50%),
+    repeating-conic-gradient(
+      rgba(139, 105, 20, 0.95) 0deg,
+      rgba(160, 125, 35, 0.95) 2deg,
+      rgba(145, 110, 25, 0.95) 4deg
+    );
+  border: 4px solid var(--pixel-border);
+  box-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.4), inset -2px -2px 0 rgba(200, 160, 60, 0.2);
+  min-height: 100%;
+  position: relative;
+}
+
+.corkboard-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(0, 0, 0, 0.15) 0%, transparent 2%),
+    radial-gradient(circle at 45% 25%, rgba(0, 0, 0, 0.1) 0%, transparent 1.5%),
+    radial-gradient(circle at 75% 10%, rgba(0, 0, 0, 0.12) 0%, transparent 2%),
+    radial-gradient(circle at 25% 55%, rgba(0, 0, 0, 0.08) 0%, transparent 1.5%),
+    radial-gradient(circle at 65% 45%, rgba(0, 0, 0, 0.1) 0%, transparent 2%),
+    radial-gradient(circle at 85% 75%, rgba(0, 0, 0, 0.12) 0%, transparent 1.5%),
+    radial-gradient(circle at 35% 85%, rgba(0, 0, 0, 0.08) 0%, transparent 2%),
+    radial-gradient(circle at 55% 65%, rgba(0, 0, 0, 0.1) 0%, transparent 1.5%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.corkboard-canvas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 8px solid rgba(90, 60, 10, 0.5);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 0;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.corkboard-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: var(--pixel-bg-dark);
+  border-bottom: 3px solid var(--pixel-border);
+  flex-wrap: wrap;
+}
+
+.corkboard-connect-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background-color: rgba(139, 38, 53, 0.3);
+  border: 2px solid var(--pixel-danger);
+  margin-left: auto;
+}
+
+.corkboard-connections-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.corkboard-connection-group {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.corkboard-connection-group:hover .corkboard-red-thread {
+  stroke: #FF4444;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px rgba(255, 0, 0, 0.6));
+}
+
+.corkboard-red-thread {
+  fill: none;
+  stroke: #CC2222;
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5));
+  pointer-events: none;
+}
+
+.corkboard-red-thread-hitarea {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 16;
+  stroke-linecap: round;
+  pointer-events: stroke;
+}
+
+.corkboard-card {
+  position: absolute;
+  width: 180px;
+  background: linear-gradient(135deg, #F5E6C8 0%, #E8D5A8 50%, #DCC898 100%);
+  border: 2px solid #8B7355;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 115, 85, 0.3);
+  cursor: grab;
+  z-index: 5;
+  transition: box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.corkboard-card:active {
+  cursor: grabbing;
+}
+
+.corkboard-card:hover {
+  box-shadow: 3px 4px 10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 115, 85, 0.5);
+}
+
+.corkboard-card-pinned {
+  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.corkboard-card-connecting {
+  box-shadow: 0 0 0 3px var(--pixel-danger), 0 0 16px rgba(139, 38, 53, 0.5);
+  animation: corkboardConnectPulse 1s ease-in-out infinite;
+}
+
+.corkboard-card-linked {
+  border-color: #CC2222;
+}
+
+@keyframes corkboardConnectPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px var(--pixel-danger), 0 0 12px rgba(139, 38, 53, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--pixel-danger), 0 0 20px rgba(139, 38, 53, 0.7);
+  }
+}
+
+.corkboard-card-accent {
+  height: 3px;
+  border-radius: 0;
+}
+
+.corkboard-card-content {
+  padding: 6px 8px 8px;
+}
+
+.corkboard-card-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background-color: var(--pixel-danger);
+  border: 2px solid var(--pixel-border);
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pixel-text-primary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.corkboard-card:hover .corkboard-card-remove {
+  opacity: 1;
+}
+
+.corkboard-pin {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.corkboard-pin-key {
+  top: -6px;
+  left: auto;
+  right: 8px;
+  transform: none;
+}
+
+.corkboard-sidebar-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background-color: var(--pixel-bg-medium);
+  border: 2px solid var(--pixel-border);
+  border-left: 3px solid;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.corkboard-sidebar-card:hover {
+  background-color: var(--pixel-bg-light);
+}
+
+.corkboard-unlock-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, var(--pixel-bg-dark), var(--pixel-bg-medium));
+  border: 3px solid var(--pixel-gold);
+  box-shadow: 0 0 30px rgba(201, 162, 39, 0.4), 6px 6px 0 var(--pixel-border);
+}

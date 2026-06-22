@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Search, Lock, Unlock, Star } from 'lucide-react';
+import { BookOpen, Search, Lock, Unlock, Star, Pin } from 'lucide-react';
 import {
   ClueCard,
   PixelPanel,
   PixelButton,
   PixelBadge,
+  CorkBoard,
 } from '../components';
 import { useStoryStore, useClues, useStories, useStoryProgressState } from '../store/useStoryStore';
 
@@ -31,6 +32,8 @@ const categoryNames: Record<string, string> = {
   memory: '记忆',
 };
 
+type ViewMode = 'list' | 'corkboard';
+
 const StoryPage: React.FC = () => {
   const clues = useClues();
   const stories = useStories();
@@ -39,6 +42,7 @@ const StoryPage: React.FC = () => {
   const [selectedRarity, setSelectedRarity] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showDiscoveredOnly, setShowDiscoveredOnly] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   const rarities = ['all', 'common', 'uncommon', 'rare', 'epic', 'legendary'];
   const categories = ['all', 'guest', 'hotel', 'history', 'secret', 'item', 'document', 'testimony', 'observation', 'memory'];
@@ -52,6 +56,43 @@ const StoryPage: React.FC = () => {
 
   const discoveredClues = clues.filter(c => c.discovered);
   const unlockedStories = stories.filter(s => s.unlocked);
+
+  if (viewMode === 'corkboard') {
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <motion.div
+          className="flex items-center justify-between px-4 py-3 border-b-3 border-[var(--pixel-border)] bg-[var(--pixel-bg-dark)]"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-3">
+            <h2 className="pixel-font-display text-lg text-[var(--pixel-text-primary)]">
+              软木板推理
+            </h2>
+            <PixelBadge variant="gold" size="sm">
+              <span className="flex items-center gap-1">
+                <BookOpen size={10} />
+                {storyProgress.discoveredClues}/{storyProgress.totalClues}
+              </span>
+            </PixelBadge>
+          </div>
+          <div className="flex items-center gap-2">
+            <PixelButton
+              variant="default"
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <span className="flex items-center gap-1">
+                <Search size={12} />
+                列表模式
+              </span>
+            </PixelButton>
+          </div>
+        </motion.div>
+        <CorkBoard />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 p-6 overflow-y-auto">
@@ -70,12 +111,24 @@ const StoryPage: React.FC = () => {
                 收集线索，解锁故事，揭开百年酒店的秘密
               </p>
             </div>
-            <PixelBadge variant="gold" size="lg">
-              <span className="flex items-center gap-2">
-                <BookOpen size={14} />
-                进度: {storyProgress.discoveredClues}/{storyProgress.totalClues}
-              </span>
-            </PixelBadge>
+            <div className="flex items-center gap-2">
+              <PixelButton
+                variant="warning"
+                size="sm"
+                onClick={() => setViewMode('corkboard')}
+              >
+                <span className="flex items-center gap-2">
+                  <Pin size={12} />
+                  软木板推理
+                </span>
+              </PixelButton>
+              <PixelBadge variant="gold" size="lg">
+                <span className="flex items-center gap-2">
+                  <BookOpen size={14} />
+                  进度: {storyProgress.discoveredClues}/{storyProgress.totalClues}
+                </span>
+              </PixelBadge>
+            </div>
           </div>
         </motion.div>
 

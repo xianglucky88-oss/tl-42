@@ -7,6 +7,7 @@ interface KeywordCloudProps {
   keywords: SentimentKeyword[];
   title?: string;
   maxDisplay?: number;
+  onKeywordClick?: (keyword: SentimentKeyword) => void;
 }
 
 const POLARITY_COLORS: Record<SentimentKeyword['polarity'], string> = {
@@ -25,6 +26,7 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
   keywords,
   title = '情感关键词云',
   maxDisplay = 20,
+  onKeywordClick,
 }) => {
   const displayedKeywords = useMemo(() => {
     return [...keywords]
@@ -57,6 +59,12 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
     };
   }, [keywords]);
 
+  const handleClick = (keyword: SentimentKeyword) => {
+    if (onKeywordClick) {
+      onKeywordClick(keyword);
+    }
+  };
+
   if (keywords.length === 0) {
     return (
       <PixelPanel variant="dark" animate={false}>
@@ -75,9 +83,16 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
   return (
     <PixelPanel variant="dark" animate={false}>
       <div className="flex items-center justify-between mb-3">
-        <p className="pixel-font-display text-sm text-[var(--pixel-text-primary)]">
-          {title}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="pixel-font-display text-sm text-[var(--pixel-text-primary)]">
+            {title}
+          </p>
+          {onKeywordClick && (
+            <span className="pixel-font-mono text-[9px] px-1.5 py-0.5 bg-[var(--pixel-bg-medium)] text-[var(--pixel-info)]">
+              点击关键词升级属性
+            </span>
+          )}
+        </div>
         <div className="flex gap-2">
           {(['positive', 'neutral', 'negative'] as const).map(polarity => (
             <div key={polarity} className="flex items-center gap-1">
@@ -100,13 +115,16 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.03, type: 'spring', stiffness: 200 }}
-            className="cursor-default select-none px-2 py-1 hover:scale-110 transition-transform"
+            className={`cursor-pointer select-none px-2 py-1 transition-all duration-200 border-2 border-transparent hover:border-current ${
+              onKeywordClick ? 'hover:scale-110 hover:bg-[var(--pixel-bg-medium)]' : 'cursor-default'
+            }`}
             style={{
               fontSize: `${getFontSize(kw.weight)}px`,
               color: POLARITY_COLORS[kw.polarity],
               fontFamily: 'var(--font-display)',
             }}
-            title={`${kw.word} (权重: ${kw.weight})`}
+            onClick={() => handleClick(kw)}
+            title={`${kw.word} (权重: ${kw.weight})${kw.relatedAttribute ? ` → ${kw.relatedAttribute}` : ''}`}
           >
             {kw.word}
           </motion.span>

@@ -94,7 +94,13 @@ const GuestReviews: React.FC<GuestReviewsProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="bg-[var(--pixel-bg-dark)] border-2 border-[var(--pixel-border)] p-3"
+            className={`bg-[var(--pixel-bg-dark)] border-2 p-3 transition-colors ${
+              review.isBadReview && !review.isResolved
+                ? 'border-[var(--pixel-danger)]'
+                : review.isResolved
+                ? 'border-[var(--pixel-success)]'
+                : 'border-[var(--pixel-border)]'
+            }`}
           >
             <div
               className="flex items-start justify-between cursor-pointer"
@@ -114,6 +120,16 @@ const GuestReviews: React.FC<GuestReviewsProps> = ({
                         VIP
                       </PixelBadge>
                     )}
+                    {review.isBadReview && !review.isResolved && (
+                      <PixelBadge variant="danger" size="sm">
+                        差评
+                      </PixelBadge>
+                    )}
+                    {review.isResolved && (
+                      <PixelBadge variant="success" size="sm">
+                        已消除
+                      </PixelBadge>
+                    )}
                     <div className="flex">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <Star
@@ -124,7 +140,7 @@ const GuestReviews: React.FC<GuestReviewsProps> = ({
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span
                       className="pixel-font-display text-xs"
                       style={{ color: getQualityColor(review.overallSatisfaction) }}
@@ -134,6 +150,11 @@ const GuestReviews: React.FC<GuestReviewsProps> = ({
                     <span className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)]">
                       第{review.stayStartDay}-{review.stayEndDay}天 · {formatDate(review.createdAt)}
                     </span>
+                    {review.isResolved && review.resolvedBy && (
+                      <span className="pixel-font-mono text-[10px] text-[var(--pixel-success)]">
+                        → {review.resolvedBy}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

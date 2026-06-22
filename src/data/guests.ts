@@ -1,4 +1,5 @@
 import type { Guest, SatisfactionDimensions, SentimentKeyword, GuestReview } from '../types/guest';
+import { KEYWORD_TO_ATTRIBUTE } from './hotel';
 
 export const GUEST_POOL: Guest[] = [
   {
@@ -332,10 +333,10 @@ export const SAMPLE_REVIEWS: GuestReview[] = [
     rating: 4,
     content: '整体入住体验不错，房间干净整洁，服务态度很好。早餐种类可以再丰富一些，设施稍微有点陈旧但维护得不错。下次来还会考虑入住。',
     keywords: [
-      { word: '干净', polarity: 'positive', weight: 8 },
-      { word: '服务好', polarity: 'positive', weight: 7 },
-      { word: '早餐一般', polarity: 'neutral', weight: 5 },
-      { word: '设施陈旧', polarity: 'negative', weight: 4 },
+      { word: '干净', polarity: 'positive', weight: 8, relatedAttribute: 'cleanliness' },
+      { word: '服务好', polarity: 'positive', weight: 7, relatedAttribute: 'service' },
+      { word: '早餐一般', polarity: 'neutral', weight: 5, relatedAttribute: 'food' },
+      { word: '设施陈旧', polarity: 'negative', weight: 4, relatedAttribute: 'facilities' },
     ],
     dimensions: { room: 85, service: 90, food: 65, facilities: 70, location: 80, cleanliness: 88 },
     overallSatisfaction: 78,
@@ -343,6 +344,8 @@ export const SAMPLE_REVIEWS: GuestReview[] = [
     stayEndDay: 3,
     createdAt: Date.now() - 86400000 * 10,
     isVIP: false,
+    isBadReview: false,
+    isResolved: false,
   },
   {
     id: 'review_002',
@@ -351,10 +354,10 @@ export const SAMPLE_REVIEWS: GuestReview[] = [
     rating: 5,
     content: '非常满意的一次入住体验！酒店的历史感很浓，服务员都很热情，房间布置得很有特色。特别喜欢大堂的老照片，很有故事感。强烈推荐！',
     keywords: [
-      { word: '历史感', polarity: 'positive', weight: 9 },
-      { word: '热情', polarity: 'positive', weight: 8 },
-      { word: '有特色', polarity: 'positive', weight: 7 },
-      { word: '推荐', polarity: 'positive', weight: 10 },
+      { word: '历史感', polarity: 'positive', weight: 9, relatedAttribute: 'location' },
+      { word: '热情', polarity: 'positive', weight: 8, relatedAttribute: 'service' },
+      { word: '有特色', polarity: 'positive', weight: 7, relatedAttribute: 'room' },
+      { word: '推荐', polarity: 'positive', weight: 10, relatedAttribute: 'service' },
     ],
     dimensions: { room: 92, service: 95, food: 85, facilities: 88, location: 90, cleanliness: 90 },
     overallSatisfaction: 90,
@@ -362,6 +365,8 @@ export const SAMPLE_REVIEWS: GuestReview[] = [
     stayEndDay: 7,
     createdAt: Date.now() - 86400000 * 5,
     isVIP: true,
+    isBadReview: false,
+    isResolved: false,
   },
   {
     id: 'review_003',
@@ -370,11 +375,11 @@ export const SAMPLE_REVIEWS: GuestReview[] = [
     rating: 3,
     content: '酒店位置不错，但是房间隔音效果差了点，晚上有点吵。空调制冷效果一般，希望能改进一下。前台服务还是挺不错的。',
     keywords: [
-      { word: '位置好', polarity: 'positive', weight: 7 },
-      { word: '隔音差', polarity: 'negative', weight: 8 },
-      { word: '吵', polarity: 'negative', weight: 6 },
-      { word: '空调一般', polarity: 'negative', weight: 5 },
-      { word: '前台好', polarity: 'positive', weight: 6 },
+      { word: '位置好', polarity: 'positive', weight: 7, relatedAttribute: 'location' },
+      { word: '隔音差', polarity: 'negative', weight: 8, relatedAttribute: 'room' },
+      { word: '吵', polarity: 'negative', weight: 6, relatedAttribute: 'room' },
+      { word: '空调一般', polarity: 'negative', weight: 5, relatedAttribute: 'facilities' },
+      { word: '前台好', polarity: 'positive', weight: 6, relatedAttribute: 'service' },
     ],
     dimensions: { room: 55, service: 80, food: 60, facilities: 50, location: 92, cleanliness: 70 },
     overallSatisfaction: 62,
@@ -382,6 +387,8 @@ export const SAMPLE_REVIEWS: GuestReview[] = [
     stayEndDay: 10,
     createdAt: Date.now() - 86400000 * 2,
     isVIP: false,
+    isBadReview: true,
+    isResolved: false,
   },
 ];
 
@@ -428,6 +435,7 @@ export function generateRandomKeywords(satisfaction: number): SentimentKeyword[]
         word,
         polarity,
         weight: 3 + Math.floor(Math.random() * 7),
+        relatedAttribute: KEYWORD_TO_ATTRIBUTE[word],
       });
     }
   }

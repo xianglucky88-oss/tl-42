@@ -1,6 +1,7 @@
 export type GuestMood = 'happy' | 'content' | 'neutral' | 'frustrated' | 'angry';
 export type GuestNeedStatus = 'unmet' | 'partial' | 'met' | 'exceeded';
 export type SentimentPolarity = 'positive' | 'neutral' | 'negative';
+export type HotelAttributeKey = 'room' | 'service' | 'food' | 'facilities' | 'location' | 'cleanliness';
 
 export interface SatisfactionDimensions {
   room: number;
@@ -15,6 +16,17 @@ export interface SentimentKeyword {
   word: string;
   polarity: SentimentPolarity;
   weight: number;
+  relatedAttribute?: HotelAttributeKey;
+}
+
+export interface HotelAttributeLevel {
+  key: HotelAttributeKey;
+  name: string;
+  level: number;
+  maxLevel: number;
+  upgradeCost: number;
+  description: string;
+  icon: string;
 }
 
 export interface GuestReview {
@@ -30,6 +42,10 @@ export interface GuestReview {
   stayEndDay: number;
   createdAt: number;
   isVIP: boolean;
+  isBadReview: boolean;
+  isResolved: boolean;
+  resolvedAt?: number;
+  resolvedBy?: string;
 }
 
 export interface GuestNeed {

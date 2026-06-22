@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { UserCheck, UserPlus, Star, BarChart3, MessageSquare, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { UserCheck, UserPlus, Star, BarChart3, MessageSquare, TrendingUp, CheckCircle, Coins } from 'lucide-react';
 import {
   GuestCard,
   PixelPanel,
@@ -9,10 +9,13 @@ import {
   SatisfactionRadar,
   KeywordCloud,
   GuestReviews,
+  UpgradeModal,
 } from '../components';
 import { useCurrentGuests, useGuestReviews, useGuestActions } from '../store/useGuestStore';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { getQualityColor } from '../utils/pixel';
+import type { SentimentKeyword } from '../types/guest';
+import { useHotelAttributes } from '../store/useHotelStore';
 
 const statusNames: Record<string, string> = {
   all: '全部',
@@ -29,8 +32,12 @@ const GuestsPage: React.FC = () => {
   const reviews = useGuestReviews();
   const guestActions = useGuestActions();
   const { addRandomGuest } = useGameLoop();
+  const hotelAttributes = useHotelAttributes();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<TabType>('reception');
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [selectedKeyword, setSelectedKeyword] = useState<SentimentKeyword | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const statusFilters = ['all', 'checking_in', 'staying', 'checking_out', 'left'];
 
@@ -41,6 +48,7 @@ const GuestsPage: React.FC = () => {
   const currentGuests = guests.filter(g => g.status !== 'left');
   const satisfiedGuests = guests.filter(g => g.satisfaction >= 80);
   const vipGuests = guests.filter(g => g.isVIP);
+  const unresolvedBadReviews = reviews.filter(r => r.isBadReview && !r.isResolved);
 
   const avgSatisfaction = useMemo(() => {
     return guestActions.getAverageSatisfaction();
@@ -55,6 +63,16 @@ const GuestsPage: React.FC = () => {
     if (vals.length === 0) return 0;
     return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
   }, [avgSatisfaction]);
+
+  const handleKeywordClick = (keyword: SentimentKeyword) => {
+    setSelectedKeyword(keyword);
+    setUpgradeModalOpen(true);
+  };
+
+  const handleUpgradeSuccess = (message: string, resolvedCount: number) => {
+    setToast({ message, type: 'success' });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const tabs: { key: TabType; label: string; icon: React.ReactNode }[] = [
     { key: 'reception', label: '客人接待', icon: <UserCheck size={14} /> },
@@ -95,7 +113,7 @@ const GuestsPage: React.FC = () => {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-5 gap-4 mb-6">
           <motion.div
             className="pixel-card p-4"
             initial={{ opacity: 0, y: 20 }}
@@ -170,6 +188,25 @@ const GuestsPage: React.FC = () => {
                   style={{ color: getQualityColor(overallSatisfaction) }}
                 >
                   {overallSatisfaction}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="pixel-card p-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center gap-3">
+              <MessageSquare size={24} className={unresolvedBadReviews.length > 0 ? 'text-[var(--pixel-danger)]' : 'text-[var(--pixel-text-secondary)]'} />
+              <div>
+                <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)]">
+                  待处理差评
+                </p>
+                <p className={`pixel-font-display text-xl ${unresolvedBadReviews.length > 0 ? 'text-[var(--pixel-danger)]' : 'text-[var(--pixel-text-secondary)]'}`}>
+                  {unresolvedBadReviews.length}
                 </p>
               </div>
             </div>
@@ -274,7 +311,61 @@ const GuestsPage: React.FC = () => {
                 keywords={allKeywords}
                 title="情感关键词云"
                 maxDisplay={25}
+                onKeywordClick={handleKeywordClick}
               />
+            </div>
+
+            <div className="mb-6">
+              <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)] mb-3">
+                酒店属性等级 · 点击上方关键词可直接升级
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {hotelAttributes.map((attr) => {
+                  const progress = (attr.level / attr.maxLevel) * 100;
+                  return (
+                    <PixelPanel
+                      key={attr.key}
+                      variant="dark"
+                      animate={false}
+                    >
+                      <div className="text-center cursor-pointer hover:border-[var(--pixel-info)] transition-colors"
+                        onClick={() => {
+                          const dummyKeyword: SentimentKeyword = {
+                            word: attr.name,
+                            polarity: 'neutral',
+                            weight: 5,
+                            relatedAttribute: attr.key,
+                          };
+                          handleKeywordClick(dummyKeyword);
+                        }}
+                      >
+                        <div className="text-2xl mb-1">{attr.icon}</div>
+                        <p className="pixel-font-mono text-[10px] text-[var(--pixel-text-secondary)] mb-0.5">
+                          {attr.name}
+                        </p>
+                        <div className="flex items-center justify-center gap-0.5 mb-1">
+                          {Array.from({ length: Math.min(5, attr.maxLevel) }).map((_, i) => (
+                            <Star
+                              key={i}
+                              size={8}
+                              className={i < Math.min(attr.level, 5) ? 'text-[var(--pixel-gold)] fill-current' : 'text-[var(--pixel-border)]'}
+                            />
+                          ))}
+                        </div>
+                        <p className="pixel-font-display text-sm text-[var(--pixel-info)]">
+                          Lv.{attr.level}
+                        </p>
+                        <div className="mt-1 h-1 bg-[var(--pixel-border)] overflow-hidden">
+                          <div
+                            className="h-full transition-all duration-500 bg-[var(--pixel-info)]"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </PixelPanel>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -401,6 +492,43 @@ const GuestsPage: React.FC = () => {
           </motion.div>
         )}
       </div>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 border-2 ${
+              toast.type === 'success'
+                ? 'bg-[var(--pixel-bg-dark)] border-[var(--pixel-success)]'
+                : 'bg-[var(--pixel-bg-dark)] border-[var(--pixel-danger)]'
+            } shadow-lg`}
+          >
+            <div className="flex items-center gap-3">
+              {toast.type === 'success' ? (
+                <CheckCircle size={20} className="text-[var(--pixel-success)]" />
+              ) : (
+                <MessageSquare size={20} className="text-[var(--pixel-danger)]" />
+              )}
+              <span
+                className={`pixel-font-display text-sm ${
+                  toast.type === 'success' ? 'text-[var(--pixel-success)]' : 'text-[var(--pixel-danger)]'
+                }`}
+              >
+                {toast.message}
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <UpgradeModal
+        isOpen={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        keyword={selectedKeyword}
+        onUpgradeSuccess={handleUpgradeSuccess}
+      />
     </div>
   );
 };

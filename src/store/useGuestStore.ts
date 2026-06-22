@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
-import type { Guest, GuestMood, GuestNeedStatus, GuestReview, SatisfactionDimensions, SentimentKeyword } from '../types/guest';
+import type { Guest, GuestMood, GuestNeedStatus, GuestReview, SatisfactionDimensions, SentimentKeyword, HotelAttributeKey } from '../types/guest';
 import { GUEST_POOL, generateDailyGuests, SAMPLE_REVIEWS, generateRandomDimensions, generateRandomKeywords } from '../data/guests';
 import { useHotelStore } from './useHotelStore';
 
@@ -37,6 +37,8 @@ interface GuestStore {
     getTodaysDepartures: (day: number) => Guest[];
     getAverageSatisfaction: () => SatisfactionDimensions;
     getAllSentimentKeywords: () => SentimentKeyword[];
+    resolveBadReviewsForAttribute: (attributeKey: HotelAttributeKey, attributeLevel: number) => string[];
+    markReviewResolved: (reviewId: string) => void;
     resetGuests: () => void;
   };
 }
@@ -105,6 +107,8 @@ export const useGuestStore = create<GuestStore>((set, get) => {
 
   const generateReviewFromGuest = (guest: Guest): GuestReview => {
     const rating = Math.max(1, Math.min(5, Math.round(guest.satisfaction / 20)));
+    const hasNegativeKeywords = guest.sentimentKeywords?.some(kw => kw.polarity === 'negative');
+    const isBadReview = rating <= 3 || guest.satisfaction < 60 || !!hasNegativeKeywords;
     return {
       id: `review_${guest.id}_${Date.now()}`,
       guestId: guest.id,
@@ -122,6 +126,8 @@ export const useGuestStore = create<GuestStore>((set, get) => {
       stayEndDay: guest.departureDay,
       createdAt: Date.now(),
       isVIP: guest.isVIP,
+      isBadReview,
+      isResolved: false,
     };
   };
 
@@ -447,6 +453,44 @@ export const useGuestStore = create<GuestStore>((set, get) => {
 
       getTodaysDepartures: (day) => {
         return get().currentGuests.filter((g) => g.departureDay === day && !g.isCheckOut);
+      },
+
+      resolveBadReviewsForAttribute: (attributeKey, attributeLevel) => {
+        const resolvedIds: string[] = [];
+        set((state) => ({
+          guestReviews: state.guestReviews.map((review) => {
+            if (review.isResolved || !review.isBadReview) return review;
+            const hasAttributeKeyword = review.keywords.some(
+              (kw) => kw.relatedAttribute === attributeKey && kw.polarity === 'negative'
+            );
+            const attributeScore = review.dimensions[attributeKey];
+            const threshold = 50 + (attributeLevel - 3) * 8;
+            if (hasAttributeKeyword && attributeScore < threshold) {
+              resolvedIds.push(review.id);
+              return {
+                ...review,
+                isResolved: true,
+                resolvedAt: Date.now(),
+                resolvedBy: `升级${attributeKey}到Lv.${attributeLevel}`,
+              };
+            }
+            return review;
+          }),
+        }));
+        if (resolvedIds.length > 0) {
+          useHotelStore.getState().actions.updateReputation(resolvedIds.length * 3);
+        }
+        return resolvedIds;
+      },
+
+      markReviewResolved: (reviewId) => {
+        set((state) => ({
+          guestReviews: state.guestReviews.map((review) =>
+            review.id === reviewId
+              ? { ...review, isResolved: true, resolvedAt: Date.now(), resolvedBy: '手动处理' }
+              : review
+          ),
+        }));
       },
 
       resetGuests: () => {

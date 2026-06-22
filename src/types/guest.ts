@@ -1,5 +1,36 @@
 export type GuestMood = 'happy' | 'content' | 'neutral' | 'frustrated' | 'angry';
 export type GuestNeedStatus = 'unmet' | 'partial' | 'met' | 'exceeded';
+export type SentimentPolarity = 'positive' | 'neutral' | 'negative';
+
+export interface SatisfactionDimensions {
+  room: number;
+  service: number;
+  food: number;
+  facilities: number;
+  location: number;
+  cleanliness: number;
+}
+
+export interface SentimentKeyword {
+  word: string;
+  polarity: SentimentPolarity;
+  weight: number;
+}
+
+export interface GuestReview {
+  id: string;
+  guestId: string;
+  guestName: string;
+  rating: number;
+  content: string;
+  keywords: SentimentKeyword[];
+  dimensions: SatisfactionDimensions;
+  overallSatisfaction: number;
+  stayStartDay: number;
+  stayEndDay: number;
+  createdAt: number;
+  isVIP: boolean;
+}
 
 export interface GuestNeed {
   id: string;
@@ -77,7 +108,9 @@ export interface Guest {
   background: string;
   preferredPrice: number;
   secret: { discovered: boolean; content: string };
-  dialogues: any[];
+  dialogues: unknown[];
+  satisfactionDimensions: SatisfactionDimensions;
+  sentimentKeywords: SentimentKeyword[];
 }
 
 export interface GuestSchedule {

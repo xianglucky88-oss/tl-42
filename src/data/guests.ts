@@ -1,4 +1,4 @@
-import type { Guest } from '../types/guest';
+import type { Guest, SatisfactionDimensions, SentimentKeyword, GuestReview } from '../types/guest';
 
 export const GUEST_POOL: Guest[] = [
   {
@@ -74,6 +74,21 @@ export const GUEST_POOL: Guest[] = [
     preferredPrice: 300,
     secret: { discovered: false, content: '他知道1947年女歌手失踪案的真相' },
     dialogues: [],
+    satisfactionDimensions: {
+      room: 85,
+      service: 78,
+      food: 70,
+      facilities: 65,
+      location: 90,
+      cleanliness: 80,
+    },
+    sentimentKeywords: [
+      { word: '怀旧', polarity: 'positive', weight: 8 },
+      { word: '安静', polarity: 'positive', weight: 7 },
+      { word: '历史感', polarity: 'positive', weight: 9 },
+      { word: '服务周到', polarity: 'positive', weight: 6 },
+      { word: '茶点不错', polarity: 'positive', weight: 5 },
+    ],
   },
   {
     id: 'guest_002',
@@ -137,6 +152,21 @@ export const GUEST_POOL: Guest[] = [
     preferredPrice: 250,
     secret: { discovered: false, content: '她的小说原型就是1947年的失踪案' },
     dialogues: [],
+    satisfactionDimensions: {
+      room: 75,
+      service: 82,
+      food: 70,
+      facilities: 78,
+      location: 85,
+      cleanliness: 72,
+    },
+    sentimentKeywords: [
+      { word: '灵感', polarity: 'positive', weight: 8 },
+      { word: '氛围好', polarity: 'positive', weight: 7 },
+      { word: '安静', polarity: 'positive', weight: 6 },
+      { word: '咖啡不错', polarity: 'positive', weight: 5 },
+      { word: '有故事感', polarity: 'positive', weight: 9 },
+    ],
   },
   {
     id: 'guest_003',
@@ -199,6 +229,21 @@ export const GUEST_POOL: Guest[] = [
     preferredPrice: 500,
     secret: { discovered: false, content: '他知道酒店地下可能埋有宝藏' },
     dialogues: [],
+    satisfactionDimensions: {
+      room: 55,
+      service: 60,
+      food: 75,
+      facilities: 50,
+      location: 85,
+      cleanliness: 58,
+    },
+    sentimentKeywords: [
+      { word: '位置好', polarity: 'positive', weight: 7 },
+      { word: '菜好吃', polarity: 'positive', weight: 6 },
+      { word: '设施陈旧', polarity: 'negative', weight: 8 },
+      { word: '房间小', polarity: 'negative', weight: 5 },
+      { word: '价格贵', polarity: 'negative', weight: 4 },
+    ],
   },
   {
     id: 'guest_004',
@@ -261,17 +306,144 @@ export const GUEST_POOL: Guest[] = [
     preferredPrice: 200,
     secret: { discovered: false, content: '她亲眼目睹了1947年的谋杀案' },
     dialogues: [],
+    satisfactionDimensions: {
+      room: 80,
+      service: 90,
+      food: 78,
+      facilities: 70,
+      location: 95,
+      cleanliness: 85,
+    },
+    sentimentKeywords: [
+      { word: '温馨', polarity: 'positive', weight: 9 },
+      { word: '回忆满满', polarity: 'positive', weight: 10 },
+      { word: '服务贴心', polarity: 'positive', weight: 8 },
+      { word: '安静舒适', polarity: 'positive', weight: 7 },
+      { word: '软食可口', polarity: 'positive', weight: 6 },
+    ],
   },
 ];
+
+export const SAMPLE_REVIEWS: GuestReview[] = [
+  {
+    id: 'review_001',
+    guestId: 'guest_hist_001',
+    guestName: '张先生',
+    rating: 4,
+    content: '整体入住体验不错，房间干净整洁，服务态度很好。早餐种类可以再丰富一些，设施稍微有点陈旧但维护得不错。下次来还会考虑入住。',
+    keywords: [
+      { word: '干净', polarity: 'positive', weight: 8 },
+      { word: '服务好', polarity: 'positive', weight: 7 },
+      { word: '早餐一般', polarity: 'neutral', weight: 5 },
+      { word: '设施陈旧', polarity: 'negative', weight: 4 },
+    ],
+    dimensions: { room: 85, service: 90, food: 65, facilities: 70, location: 80, cleanliness: 88 },
+    overallSatisfaction: 78,
+    stayStartDay: 1,
+    stayEndDay: 3,
+    createdAt: Date.now() - 86400000 * 10,
+    isVIP: false,
+  },
+  {
+    id: 'review_002',
+    guestId: 'guest_hist_002',
+    guestName: '李女士',
+    rating: 5,
+    content: '非常满意的一次入住体验！酒店的历史感很浓，服务员都很热情，房间布置得很有特色。特别喜欢大堂的老照片，很有故事感。强烈推荐！',
+    keywords: [
+      { word: '历史感', polarity: 'positive', weight: 9 },
+      { word: '热情', polarity: 'positive', weight: 8 },
+      { word: '有特色', polarity: 'positive', weight: 7 },
+      { word: '推荐', polarity: 'positive', weight: 10 },
+    ],
+    dimensions: { room: 92, service: 95, food: 85, facilities: 88, location: 90, cleanliness: 90 },
+    overallSatisfaction: 90,
+    stayStartDay: 5,
+    stayEndDay: 7,
+    createdAt: Date.now() - 86400000 * 5,
+    isVIP: true,
+  },
+  {
+    id: 'review_003',
+    guestId: 'guest_hist_003',
+    guestName: '赵先生',
+    rating: 3,
+    content: '酒店位置不错，但是房间隔音效果差了点，晚上有点吵。空调制冷效果一般，希望能改进一下。前台服务还是挺不错的。',
+    keywords: [
+      { word: '位置好', polarity: 'positive', weight: 7 },
+      { word: '隔音差', polarity: 'negative', weight: 8 },
+      { word: '吵', polarity: 'negative', weight: 6 },
+      { word: '空调一般', polarity: 'negative', weight: 5 },
+      { word: '前台好', polarity: 'positive', weight: 6 },
+    ],
+    dimensions: { room: 55, service: 80, food: 60, facilities: 50, location: 92, cleanliness: 70 },
+    overallSatisfaction: 62,
+    stayStartDay: 8,
+    stayEndDay: 10,
+    createdAt: Date.now() - 86400000 * 2,
+    isVIP: false,
+  },
+];
+
+export function generateRandomDimensions(baseSatisfaction: number): SatisfactionDimensions {
+  const variance = 15;
+  return {
+    room: Math.max(0, Math.min(100, baseSatisfaction + Math.floor(Math.random() * variance * 2) - variance)),
+    service: Math.max(0, Math.min(100, baseSatisfaction + Math.floor(Math.random() * variance * 2) - variance)),
+    food: Math.max(0, Math.min(100, baseSatisfaction + Math.floor(Math.random() * variance * 2) - variance)),
+    facilities: Math.max(0, Math.min(100, baseSatisfaction + Math.floor(Math.random() * variance * 2) - variance)),
+    location: Math.max(0, Math.min(100, baseSatisfaction + Math.floor(Math.random() * variance * 2) - variance)),
+    cleanliness: Math.max(0, Math.min(100, baseSatisfaction + Math.floor(Math.random() * variance * 2) - variance)),
+  };
+}
+
+const POSITIVE_WORDS = ['舒适', '干净', '热情', '周到', '美味', '安静', '方便', '温馨', '满意', '推荐', '贴心', '专业', '友好', '值得', '惊喜'];
+const NEUTRAL_WORDS = ['一般', '还行', '普通', '标准', '常规', '正常', '基础'];
+const NEGATIVE_WORDS = ['陈旧', '吵闹', '失望', '老旧', '糟糕', '冷漠', '脏乱', '拥挤', '闷热', '异味'];
+
+export function generateRandomKeywords(satisfaction: number): SentimentKeyword[] {
+  const keywords: SentimentKeyword[] = [];
+  const count = 4 + Math.floor(Math.random() * 3);
+  const positiveRatio = satisfaction / 100;
+
+  for (let i = 0; i < count; i++) {
+    const rand = Math.random();
+    let polarity: 'positive' | 'neutral' | 'negative';
+    let wordPool: string[];
+
+    if (rand < positiveRatio * 0.8) {
+      polarity = 'positive';
+      wordPool = POSITIVE_WORDS;
+    } else if (rand < positiveRatio * 0.8 + 0.15) {
+      polarity = 'neutral';
+      wordPool = NEUTRAL_WORDS;
+    } else {
+      polarity = 'negative';
+      wordPool = NEGATIVE_WORDS;
+    }
+
+    const word = wordPool[Math.floor(Math.random() * wordPool.length)];
+    if (!keywords.some(k => k.word === word)) {
+      keywords.push({
+        word,
+        polarity,
+        weight: 3 + Math.floor(Math.random() * 7),
+      });
+    }
+  }
+
+  return keywords;
+}
 
 export function generateDailyGuests(day: number): Guest[] {
   const guests: Guest[] = [];
   const shuffled = [...GUEST_POOL].sort(() => Math.random() - 0.5);
-  
+
   const numGuests = Math.min(3 + Math.floor(day / 3), 6);
-  
+
   for (let i = 0; i < numGuests; i++) {
     if (i < shuffled.length) {
+      const baseSatisfaction = 50 + Math.floor(Math.random() * 30);
       const guest = { ...shuffled[i] };
       guest.arrivalDay = day;
       guest.departureDay = day + (guest.stayDuration || 0);
@@ -279,7 +451,9 @@ export function generateDailyGuests(day: number): Guest[] {
       guest.isCheckOut = false;
       guest.totalBill = 0;
       guest.paid = false;
-      guest.satisfaction = 50 + Math.floor(Math.random() * 30);
+      guest.satisfaction = baseSatisfaction;
+      guest.satisfactionDimensions = generateRandomDimensions(baseSatisfaction);
+      guest.sentimentKeywords = generateRandomKeywords(baseSatisfaction);
       guest.observations = guest.observations.map(o => ({ ...o, discovered: false }));
       guest.unlockedClues = [];
       guest.status = 'checking_in';
@@ -287,6 +461,6 @@ export function generateDailyGuests(day: number): Guest[] {
       guests.push(guest);
     }
   }
-  
+
   return guests;
 }

@@ -73,6 +73,9 @@ export interface GuestObservation {
   discovered: boolean;
 }
 
+export type DialogueNodeType = 'greeting' | 'player_option' | 'guest_response';
+export type BranchStatus = 'selected' | 'available' | 'locked' | 'unexplored';
+
 export interface DialogueOption {
   id: string;
   text: string;
@@ -91,6 +94,50 @@ export interface DialogueResponse {
     clueId?: string;
     unlocksStory?: string;
   };
+}
+
+export interface DialogueBranchNode {
+  id: string;
+  type: DialogueNodeType;
+  text: string;
+  speaker: 'player' | 'guest';
+  timestamp: number;
+  optionId?: string;
+  responseId?: string;
+  status: BranchStatus;
+  requiredClueId?: string;
+  requiredReputation?: number;
+  effect?: {
+    mood?: number;
+    reputation?: number;
+    clueId?: string;
+    unlocksStory?: string;
+  };
+  children: DialogueBranchNode[];
+  parentId?: string;
+  depth: number;
+  isSelectedPath: boolean;
+}
+
+export interface DialogueHistoryRecord {
+  id: string;
+  guestId: string;
+  guestName: string;
+  guestAvatar?: string;
+  day: number;
+  timestamp: number;
+  branches: DialogueBranchNode[];
+  selectedPath: string[];
+  discoveredClueIds: string[];
+  reputationChanges: number;
+  completed: boolean;
+}
+
+export interface GuestDialogueHistory {
+  guestId: string;
+  records: DialogueHistoryRecord[];
+  allSelectedOptionIds: string[];
+  allDiscoveredBranches: string[];
 }
 
 export interface Guest {

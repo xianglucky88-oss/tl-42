@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { useMemo } from 'react';
 import type { Clue, StoryFragment, HotelHistoryEvent, GuestSecret, StoryProgress } from '../types/story';
+import type { DialogueHistoryRecord, GuestDialogueHistory, DialogueBranchNode } from '../types/guest';
 import { ALL_CLUES, STORY_FRAGMENTS, HOTEL_HISTORY, GUEST_SECRETS, INITIAL_STORY_PROGRESS, INITIAL_CLUES } from '../data/stories';
 import { useGameStore } from './useGameStore';
 
@@ -13,6 +14,7 @@ interface StoryStore {
   clues: Clue[];
   stories: StoryFragment[];
   storyProgress: StoryProgress;
+  dialogueHistories: Record<string, GuestDialogueHistory>;
   discoverClue: (clueId: string, discoveredBy: string, day: number) => Clue | undefined;
   hasClue: (clueId: string) => boolean;
   getClueById: (clueId: string) => Clue | undefined;
@@ -29,6 +31,10 @@ interface StoryStore {
   getCurrentChapterProgress: () => number;
   checkForEnding: () => StoryFragment | undefined;
   resetStory: () => void;
+  saveDialogueRecord: (guestId: string, record: Omit<DialogueHistoryRecord, 'id' | 'timestamp'>) => void;
+  getGuestDialogueHistory: (guestId: string) => GuestDialogueHistory | undefined;
+  getAllDialogueHistories: () => Record<string, GuestDialogueHistory>;
+  hasDialogueHistory: (guestId: string) => boolean;
 }
 
 export const useStoryStore = create<StoryStore>((set, get) => ({
@@ -37,6 +43,7 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
   hotelHistory: [...HOTEL_HISTORY],
   guestSecrets: [...GUEST_SECRETS],
   progress: { ...INITIAL_STORY_PROGRESS },
+  dialogueHistories: {},
 
   get clues() {
     const { discoveredClues } = get();
@@ -245,6 +252,77 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
     );
   },
 
+  saveDialogueRecord: (guestId, record) => {
+    const { dialogueHistories } = get();
+    const existing = dialogueHistories[guestId] || {
+      guestId,
+      records: [],
+      allSelectedOptionIds: [],
+      allDiscoveredBranches: [],
+    };
+
+    const newRecord: DialogueHistoryRecord = {
+      ...record,
+      id: `dialogue_${guestId}_${Date.now()}`,
+      timestamp: Date.now(),
+    };
+
+    const selectedOptionIdsFromTree = (nodes: DialogueBranchNode[]): string[] => {
+      const result: string[] = [];
+      nodes.forEach((node) => {
+        if (node.type === 'player_option' && node.status === 'selected' && node.optionId) {
+          result.push(node.optionId);
+        }
+        result.push(...selectedOptionIdsFromTree(node.children));
+      });
+      return result;
+    };
+
+    const discoveredBranchIdsFromTree = (nodes: DialogueBranchNode[]): string[] => {
+      const result: string[] = [];
+      nodes.forEach((node) => {
+        if (node.status === 'selected' || node.status === 'available') {
+          result.push(node.id);
+        }
+        if (node.optionId) {
+          result.push(node.optionId);
+        }
+        result.push(...discoveredBranchIdsFromTree(node.children));
+      });
+      return result;
+    };
+
+    const newSelectedOptions = selectedOptionIdsFromTree(record.branches);
+    const newDiscoveredBranches = discoveredBranchIdsFromTree(record.branches);
+
+    const updated: GuestDialogueHistory = {
+      ...existing,
+      records: [...existing.records, newRecord],
+      allSelectedOptionIds: Array.from(new Set([...existing.allSelectedOptionIds, ...newSelectedOptions])),
+      allDiscoveredBranches: Array.from(new Set([...existing.allDiscoveredBranches, ...newDiscoveredBranches])),
+    };
+
+    set((state) => ({
+      dialogueHistories: {
+        ...state.dialogueHistories,
+        [guestId]: updated,
+      },
+    }));
+  },
+
+  getGuestDialogueHistory: (guestId) => {
+    return get().dialogueHistories[guestId];
+  },
+
+  getAllDialogueHistories: () => {
+    return get().dialogueHistories;
+  },
+
+  hasDialogueHistory: (guestId) => {
+    const history = get().dialogueHistories[guestId];
+    return history && history.records.length > 0;
+  },
+
   resetStory: () => {
     set({
       discoveredClues: [...INITIAL_CLUES],
@@ -252,6 +330,7 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
       hotelHistory: [...HOTEL_HISTORY],
       guestSecrets: [...GUEST_SECRETS],
       progress: { ...INITIAL_STORY_PROGRESS },
+      dialogueHistories: {},
     });
   },
 }));
@@ -276,4 +355,17 @@ export const useClues = () => {
 export const useStories = () => {
   const storyFragments = useStoryFragments();
   return storyFragments;
+};
+
+export const useDialogueHistories = () => useStoryStore((state) => state.dialogueHistories);
+export const useGuestDialogueHistory = (guestId: string) =>
+  useStoryStore((state) => state.dialogueHistories[guestId]);
+export const useHasDialogueHistory = (guestId: string) =>
+  useStoryStore((state) => {
+    const history = state.dialogueHistories[guestId];
+    return history && history.records.length > 0;
+  });
+export const useDialogueHistoryActions = () => {
+  const { saveDialogueRecord, getGuestDialogueHistory, getAllDialogueHistories, hasDialogueHistory } = useStoryStore.getState();
+  return { saveDialogueRecord, getGuestDialogueHistory, getAllDialogueHistories, hasDialogueHistory };
 };

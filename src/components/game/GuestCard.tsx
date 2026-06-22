@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, MessageCircle, Eye, Star, Clock, AlertTriangle, CheckCircle, Package } from 'lucide-react';
+import { User, MessageCircle, Eye, Star, Clock, AlertTriangle, CheckCircle, Package, BookOpen, History } from 'lucide-react';
 import { Guest } from '../../types/guest';
 import { PixelAvatar, PixelProgress, PixelButton, PixelBadge, PixelPanel, PixelWindow } from '../ui';
+import { DialogueHistoryViewer } from './';
 import { useDialogue } from '../../hooks/useDialogue';
 import { useGameLoop } from '../../hooks/useGameLoop';
-import { useStoryStore, useDiscoveredClues } from '../../store/useStoryStore';
+import { useStoryStore, useDiscoveredClues, useGuestDialogueHistory } from '../../store/useStoryStore';
 import { useHotelStore, useHotelReputation } from '../../store/useHotelStore';
 import { useInventoryStore, useInventoryItems } from '../../store/useInventoryStore';
+import { useCurrentDay } from '../../store/useGameStore';
 import { getMoodColor } from '../../utils/pixel';
 
 interface GuestCardProps {
@@ -18,11 +20,41 @@ interface GuestCardProps {
 const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showDialogue, setShowDialogue] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const { dialogueState, startDialogue, selectOption, endDialogue } = useDialogue();
   const { meetGuestNeed, applyDialogueEffect, addObservation: gameLoopAddObservation } = useGameLoop();
   const discoveredClues = useDiscoveredClues();
   const reputation = useHotelReputation();
   const inventoryItems = useInventoryItems();
+  const currentDay = useCurrentDay();
+  const dialogueHistory = useGuestDialogueHistory(guest.id);
+  const { saveDialogueRecord } = useStoryStore.getState();
+
+  const [prevIsEnded, setPrevIsEnded] = useState(false);
+
+  useEffect(() => {
+    if (dialogueState.isEnded && !prevIsEnded && dialogueState.guestId === guest.id) {
+      const clueIds: string[] = [];
+      if (dialogueState.lastEffect?.clueId) {
+        clueIds.push(dialogueState.lastEffect.clueId);
+      }
+
+      const repChange = dialogueState.lastEffect?.reputation || 0;
+
+      saveDialogueRecord(guest.id, {
+        guestId: guest.id,
+        guestName: guest.name,
+        guestAvatar: guest.avatar,
+        day: currentDay,
+        branches: dialogueState.dialogueTree,
+        selectedPath: dialogueState.selectedPathIds,
+        discoveredClueIds: clueIds,
+        reputationChanges: repChange,
+        completed: true,
+      });
+    }
+    setPrevIsEnded(dialogueState.isEnded);
+  }, [dialogueState.isEnded, dialogueState.guestId, guest.id, dialogueState.dialogueTree, dialogueState.selectedPathIds, dialogueState.lastEffect, currentDay, saveDialogueRecord]);
 
   const statusNames: Record<string, string> = {
     checking_in: '入住中',
@@ -47,6 +79,7 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
         reputation,
       });
       setShowDialogue(true);
+      setPrevIsEnded(false);
     }
   };
 
@@ -105,6 +138,7 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
   const unmetNeeds = guest.needs.filter(n => !n.met);
   const metNeeds = guest.needs.filter(n => n.met);
   const undiscoveredObservations = guest.observations?.filter(o => !o.discovered) || [];
+  const hasDialogueHistory = dialogueHistory && dialogueHistory.records.length > 0;
 
   return (
     <>
@@ -230,13 +264,13 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
             </div>
           )}
 
-          <div className="mt-4 pt-3 border-t-2 border-[var(--pixel-border)] flex gap-2">
+          <div className="mt-4 pt-3 border-t-2 border-[var(--pixel-border)] flex flex-wrap gap-2">
             <PixelButton
               variant="primary"
               size="sm"
               onClick={handleTalk}
               disabled={!guest.dialogueOptions || guest.dialogueOptions.length === 0}
-              className="flex-1"
+              className="flex-1 min-w-[80px]"
             >
               <span className="flex items-center justify-center gap-1">
                 <MessageCircle size={12} />
@@ -248,11 +282,22 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
               size="sm"
               onClick={handleObserve}
               disabled={undiscoveredObservations.length === 0}
-              className="flex-1"
+              className="flex-1 min-w-[80px]"
             >
               <span className="flex items-center justify-center gap-1">
                 <Eye size={12} />
                 观察 ({undiscoveredObservations.length})
+              </span>
+            </PixelButton>
+            <PixelButton
+              variant={hasDialogueHistory ? 'warning' : 'default'}
+              size="sm"
+              onClick={() => setShowHistory(true)}
+              disabled={!hasDialogueHistory}
+            >
+              <span className="flex items-center justify-center gap-1">
+                <History size={12} />
+                {hasDialogueHistory ? '历史' : ''}
               </span>
             </PixelButton>
             <PixelButton
@@ -302,6 +347,29 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
                       </div>
                     ))}
                   </div>
+                </PixelPanel>
+              )}
+
+              {hasDialogueHistory && (
+                <PixelPanel variant="dark" animate={false}>
+                  <p className="pixel-font-mono text-xs text-[var(--pixel-info)] mb-2 flex items-center gap-1">
+                    <BookOpen size={12} />
+                    对话历史
+                  </p>
+                  <p className="pixel-font-mono text-xs text-[var(--pixel-text-primary)] mb-2">
+                    已进行 {dialogueHistory!.records.length} 次对话，探索了 {dialogueHistory!.allSelectedOptionIds.length} 个选项分支
+                  </p>
+                  <PixelButton
+                    variant="warning"
+                    size="sm"
+                    onClick={() => setShowHistory(true)}
+                    className="w-full"
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      <History size={12} />
+                      查看完整对话历史
+                    </span>
+                  </PixelButton>
                 </PixelPanel>
               )}
             </motion.div>
@@ -393,20 +461,45 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, className = '' }) => {
             )}
 
             {dialogueState.isEnded && (
-              <PixelButton
-                variant="primary"
-                className="w-full"
-                onClick={() => {
-                  endDialogue();
-                  setShowDialogue(false);
-                }}
-              >
-                结束对话
-              </PixelButton>
+              <div className="flex gap-2">
+                <PixelButton
+                  variant="warning"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowHistory(true);
+                    endDialogue();
+                    setShowDialogue(false);
+                  }}
+                >
+                  <span className="flex items-center justify-center gap-1">
+                    <History size={12} />
+                    查看对话历史
+                  </span>
+                </PixelButton>
+                <PixelButton
+                  variant="primary"
+                  className="flex-1"
+                  onClick={() => {
+                    endDialogue();
+                    setShowDialogue(false);
+                  }}
+                >
+                  结束对话
+                </PixelButton>
+              </div>
             )}
           </div>
         )}
       </PixelWindow>
+
+      <DialogueHistoryViewer
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        guestId={guest.id}
+        guestName={guest.name}
+        guestAvatar={guest.avatar}
+        history={dialogueHistory}
+      />
     </>
   );
 };

@@ -7,3 +7,5 @@ export { default as HotelStatus } from './HotelStatus';
 export { default as ScheduleBoard } from './ScheduleBoard';
 export { default as CorkBoard } from './CorkBoard';
 export { default as CorkNote } from './CorkNote';
+export { default as DialogueHistoryTree } from './DialogueHistoryTree';
+export { default as DialogueHistoryViewer } from './DialogueHistoryViewer';

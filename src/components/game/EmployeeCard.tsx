@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Briefcase, Zap, Heart, Clock, MapPin, AlertCircle } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { Employee } from '../../types/employee';
 import { PixelAvatar, PixelProgress, PixelButton, PixelBadge, PixelPanel } from '../ui';
 import { useEmployeeStore } from '../../store/useEmployeeStore';
@@ -27,8 +28,8 @@ const areaNames: Record<AreaType, string> = {
 const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onAssign, className = '' }) => {
   const [showDetails, setShowDetails] = useState(false);
   const { assignEmployee } = useEmployeeStore();
-  const activeMoodEvents = useMoodEventStore((s) =>
-    s.activeEvents.filter(ae => ae.employeeId === employee.id && !ae.resolved)
+  const activeMoodEvents = useMoodEventStore(
+    useShallow((s) => s.activeEvents.filter(ae => ae.employeeId === employee.id && !ae.resolved))
   );
 
   const handleAssign = (area: AreaType) => {

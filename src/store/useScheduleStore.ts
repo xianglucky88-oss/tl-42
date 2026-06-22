@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import type { WeeklySchedule, ScheduleAssignment, ScheduleConflict, ScheduleBonus } from '../types/employee';
 import type { AreaType } from '../types/game';
 
@@ -259,7 +260,7 @@ export const useScheduleStore = create<ScheduleStore>((set, get) => {
 });
 
 export const useSchedules = () => useScheduleStore(state => state.schedules);
-export const useScheduleActions = () => useScheduleStore(state => ({
+export const useScheduleActions = () => useScheduleStore(useShallow(state => ({
   setSchedule: state.setSchedule,
   setWeekSchedule: state.setWeekSchedule,
   clearSchedule: state.clearSchedule,
@@ -267,4 +268,4 @@ export const useScheduleActions = () => useScheduleStore(state => ({
   calculateBonuses: state.calculateBonuses,
   initSchedules: state.initSchedules,
   applyDaySchedule: state.applyDaySchedule,
-}));
+})));

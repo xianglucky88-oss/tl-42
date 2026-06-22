@@ -170,27 +170,28 @@ export const useMoodEventStore = create<MoodEventStore>((set, get) => ({
 
     const personalizedText = choice.resultText.replace(/\{employee\}/g, empName);
 
-    set(state => ({
-      activeEvents: state.activeEvents.map(ae =>
-        ae.id === activeEventId ? { ...ae, resolved: true, chosenOptionId: choiceId } : ae
-      ),
+    const updatedActiveEvents = state.activeEvents.map(ae =>
+      ae.id === activeEventId ? { ...ae, resolved: true, chosenOptionId: choiceId } : ae
+    );
+    const nextPending = updatedActiveEvents.find(ae => !ae.resolved) || null;
+
+    set({
+      activeEvents: updatedActiveEvents,
       resolvedEvents: [
         ...state.resolvedEvents,
         { ...activeEvent, resolved: true, chosenOptionId: choiceId },
       ],
       lastResultText: personalizedText,
-    }));
-
-    const remainingUnresolved = get().activeEvents.filter(
-      ae => !ae.resolved && ae.id !== activeEventId
-    );
-    set({ pendingEvent: remainingUnresolved[0] || null });
+      pendingEvent: nextPending,
+    });
   },
 
   dismissPending: () => {
-    set({ lastResultText: null });
     const remainingUnresolved = get().activeEvents.filter(ae => !ae.resolved);
-    set({ pendingEvent: remainingUnresolved[0] || null });
+    set({
+      lastResultText: null,
+      pendingEvent: remainingUnresolved[0] || null,
+    });
   },
 
   getActiveEventsForEmployee: (employeeId) => {
@@ -215,10 +216,10 @@ export const usePendingMoodEvent = () => useMoodEventStore((state) => state.pend
 
 export const useMoodEventResult = () => useMoodEventStore((state) => state.lastResultText);
 
-export const useMoodEventActions = () => ({
-  triggerMoodEvents: useMoodEventStore.getState().triggerMoodEvents,
-  resolveMoodEvent: useMoodEventStore.getState().resolveMoodEvent,
-  dismissPending: useMoodEventStore.getState().dismissPending,
-  resetMoodEvents: useMoodEventStore.getState().resetMoodEvents,
-  getActiveEventsForEmployee: useMoodEventStore.getState().getActiveEventsForEmployee,
-});
+export const useMoodEventActions = () => useMoodEventStore(useShallow((state) => ({
+  triggerMoodEvents: state.triggerMoodEvents,
+  resolveMoodEvent: state.resolveMoodEvent,
+  dismissPending: state.dismissPending,
+  resetMoodEvents: state.resetMoodEvents,
+  getActiveEventsForEmployee: state.getActiveEventsForEmployee,
+})));

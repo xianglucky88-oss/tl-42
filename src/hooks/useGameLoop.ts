@@ -6,6 +6,7 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { useGuestStore } from '../store/useGuestStore';
 import { useStoryStore } from '../store/useStoryStore';
 import { useScheduleStore } from '../store/useScheduleStore';
+import { useMoodEventStore } from '../store/useMoodEventStore';
 import type { DayPhase } from '../types/game';
 import type { GuestNeed } from '../types/guest';
 import { getDifficultyConfig } from '../utils/formula';
@@ -126,6 +127,15 @@ export function useGameLoop() {
           }
         });
       }
+
+      const moodEventState = useMoodEventStore.getState();
+      const triggeredEvents = moodEventState.triggerMoodEvents(
+        employeeState.employees,
+        gameState.currentDay
+      );
+      if (triggeredEvents.length > 0) {
+        console.log(`[GameLoop] 触发了${triggeredEvents.length}个员工心情事件`);
+      }
     } else {
       console.log(`[GameLoop] 第${gameState.currentDay}天结束，开始结算`);
 
@@ -235,6 +245,15 @@ export function useGameLoop() {
 
       inventoryState.actions.checkPendingDeliveries(newDay);
       storyState.checkForUnlocks();
+
+      const moodEventState = useMoodEventStore.getState();
+      const morningMoodEvents = moodEventState.triggerMoodEvents(
+        employeeState.employees,
+        newDay
+      );
+      if (morningMoodEvents.length > 0) {
+        console.log(`[GameLoop] 新一天触发了${morningMoodEvents.length}个员工心情事件`);
+      }
     }
   }, []);
 

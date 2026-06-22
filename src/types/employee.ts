@@ -73,6 +73,71 @@ export interface ScheduleConflict {
   message: string;
 }
 
+export type MoodEventCategory =
+  | 'birthday'
+  | 'family'
+  | 'conflict'
+  | 'praise'
+  | 'personal'
+  | 'workplace'
+  | 'health'
+  | 'romance'
+  | 'financial';
+
+export type MoodEventSeverity = 'minor' | 'moderate' | 'major';
+
+export interface MoodEventChoice {
+  id: string;
+  text: string;
+  effects: {
+    morale?: number;
+    mood?: number;
+    stamina?: number;
+    efficiency?: number;
+    friendliness?: number;
+    money?: number;
+    reputation?: number;
+  };
+  resultText: string;
+  sideEffects?: {
+    targetEmployeeId?: string;
+    morale?: number;
+    mood?: number;
+    efficiency?: number;
+  };
+}
+
+export interface MoodEvent {
+  id: string;
+  category: MoodEventCategory;
+  severity: MoodEventSeverity;
+  title: string;
+  description: string;
+  emoji: string;
+  applicableRoles?: EmployeeRole[];
+  applicableTraits?: string[];
+  minMorale?: number;
+  maxMorale?: number;
+  probability: number;
+  cooldownDays: number;
+  choices: MoodEventChoice[];
+}
+
+export interface ActiveMoodEvent {
+  id: string;
+  eventId: string;
+  employeeId: string;
+  triggeredDay: number;
+  resolved: boolean;
+  chosenOptionId?: string;
+}
+
+export interface MoodEventCooldown {
+  eventId: string;
+  employeeId: string;
+  untilDay: number;
+}
+
 export interface ScheduleBonus {
   employeeId: string;
   staminaSaved: number;

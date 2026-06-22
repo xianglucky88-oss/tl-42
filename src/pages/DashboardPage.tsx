@@ -7,6 +7,7 @@ import {
   EmployeeCard,
   GuestCard,
   ClueCard,
+  MoodEventModal,
   PixelPanel,
   PixelButton,
   PixelBadge,
@@ -17,6 +18,7 @@ import { useGuestStore, useCurrentGuests } from '../store/useGuestStore';
 import { useStoryStore, useClues, useStoryProgressState } from '../store/useStoryStore';
 import { useGameStore, useCurrentDay, useCurrentPhase } from '../store/useGameStore';
 import { useGameLoop } from '../hooks/useGameLoop';
+import { useActiveMoodEvents } from '../store/useMoodEventStore';
 
 const DashboardPage: React.FC = () => {
   const hotel = useHotelData();
@@ -28,6 +30,7 @@ const DashboardPage: React.FC = () => {
   const currentDay = useCurrentDay();
   const currentPhase = useCurrentPhase();
   const { nextDay, nextPhase } = useGameLoop();
+  const activeMoodEvents = useActiveMoodEvents();
 
   const recentClues = clues.filter(c => c.discovered).slice(0, 3);
   const currentGuests = guests.filter(g => g.status !== 'left');
@@ -57,6 +60,20 @@ const DashboardPage: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {activeMoodEvents.length > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  <PixelBadge variant="danger" size="md">
+                    <span className="flex items-center gap-1">
+                      <Bell size={12} />
+                      {activeMoodEvents.length}个待处理事件
+                    </span>
+                  </PixelBadge>
+                </motion.div>
+              )}
               {dailyStats && (
                 <PixelPanel variant="dark" animate={false} className="py-2 px-4">
                   <div className="flex items-center gap-4">
@@ -267,6 +284,7 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <MoodEventModal />
     </div>
   );
 };

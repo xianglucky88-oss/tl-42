@@ -9,3 +9,4 @@ export { default as CorkBoard } from './CorkBoard';
 export { default as CorkNote } from './CorkNote';
 export { default as DialogueHistoryTree } from './DialogueHistoryTree';
 export { default as DialogueHistoryViewer } from './DialogueHistoryViewer';
+export { default as MoodEventModal } from './MoodEventModal';

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Briefcase, Zap, Heart, Clock, MapPin } from 'lucide-react';
+import { Briefcase, Zap, Heart, Clock, MapPin, AlertCircle } from 'lucide-react';
 import { Employee } from '../../types/employee';
 import { PixelAvatar, PixelProgress, PixelButton, PixelBadge, PixelPanel } from '../ui';
 import { useEmployeeStore } from '../../store/useEmployeeStore';
+import { useMoodEventStore } from '../../store/useMoodEventStore';
+import { MOOD_EVENTS } from '../../data/moodEvents';
 import { AreaType } from '../../types/game';
 
 interface EmployeeCardProps {
@@ -25,6 +27,9 @@ const areaNames: Record<AreaType, string> = {
 const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onAssign, className = '' }) => {
   const [showDetails, setShowDetails] = useState(false);
   const { assignEmployee } = useEmployeeStore();
+  const activeMoodEvents = useMoodEventStore((s) =>
+    s.activeEvents.filter(ae => ae.employeeId === employee.id && !ae.resolved)
+  );
 
   const handleAssign = (area: AreaType) => {
     assignEmployee(employee.id, area);
@@ -60,6 +65,23 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onAssign, classNa
               <PixelBadge variant="info" size="sm">
                 {roleNames[employee.role] || employee.role}
               </PixelBadge>
+              {activeMoodEvents.length > 0 && (
+                <motion.span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 cursor-pointer"
+                  style={{
+                    background: 'rgba(239,68,68,0.15)',
+                    border: '1px solid rgba(239,68,68,0.4)',
+                    color: 'var(--pixel-danger)',
+                  }}
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                >
+                  <AlertCircle size={10} />
+                  <span className="pixel-font-mono text-xs">
+                    {MOOD_EVENTS.find(e => e.id === activeMoodEvents[0].eventId)?.emoji || '⚡'}
+                  </span>
+                </motion.span>
+              )}
             </div>
             <p className="pixel-font-mono text-xs text-[var(--pixel-text-secondary)] mb-3">
               等级 {employee.level} · 经验 {employee.exp}/{employee.level * 100}

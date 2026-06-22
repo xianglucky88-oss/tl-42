@@ -8,6 +8,7 @@ import {
   PixelBadge,
   PixelWindow,
   ScheduleBoard,
+  MoodEventModal,
 } from '../components';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import { AreaType } from '../types/game';
@@ -212,6 +213,7 @@ const ManagementPage: React.FC = () => {
           </div>
         </div>
       </PixelWindow>
+      <MoodEventModal />
     </div>
   );
 };
